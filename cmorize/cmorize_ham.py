@@ -209,6 +209,21 @@ pdrmip_daily = [
              vertical_coord_type='Surface'),
 ]
 
+pdrmip_fixed_daily = [
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='fixed_daily', long_name='precipitation',
+             standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product="NetCDF_Gridded"),
+    # Second table
+    cmor_var('prc', 'aprc', stream='fixed_daily', vertical_coord_type='Surface',
+             standard_name='convective_precipitation_flux', product="NetCDF_Gridded"),
+]
+
+pdrmip_fixed_monthly = [
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='fixed_monthly', long_name='precipitation',
+             standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product="NetCDF_Gridded"),
+    cmor_var('prc', 'aprc', stream='fixed_monthly', vertical_coord_type='Surface',
+             standard_name='convective_precipitation_flux', product="NetCDF_Gridded"),
+]
+
 aer_rad = [
     cmor_var('od550aer', 'TAU_2D_550nm', stream='rad', long_name='AOD@550nm',
              standard_name='atmosphere_optical_thickness_due_to_ambient_aerosol', units=Unit('1'),
