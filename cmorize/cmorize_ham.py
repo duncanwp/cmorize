@@ -102,10 +102,6 @@ core = [
     cmor_var('ts', 'tslm1', stream='echam', long_name='surface temperature of land',
              standard_name='surface_temperature', units=Unit('K')),
 
-    cmor_var('tasmin', 't2min', stream='echam', long_name='Minimum Daily temperature', standard_name='air_temperature',
-             units=Unit('K'), vertical_coord_type='Surface'),
-    cmor_var('tasmax', 't2max', stream='echam', long_name='Maximum Daily temperature', standard_name='air_temperature',
-             units=Unit('K'), vertical_coord_type='Surface'),
     cmor_var('hus', 'q', stream='echam', long_name='specific humidity', standard_name='specific_humidity',
              units=Unit('1'), vertical_coord_type='ModelLevel'),
 
@@ -194,27 +190,33 @@ cloud = [
 ]
 
 pdrmip_daily = [
-    cmor_var('tasmin', 't2min', stream='hifreq', long_name='Minimum Daily temperature', standard_name='air_temperature',
+    cmor_var('tasmin', 't2min', stream='hifreq', long_name='Daily Minimum Near-Surface Air Temperature', standard_name='air_temperature',
              units=Unit('K'), vertical_coord_type='Surface'),
-    cmor_var('tasmax', 't2max', stream='hifreq', long_name='Maximum Daily temperature', standard_name='air_temperature',
+    cmor_var('tasmax', 't2max', stream='hifreq', long_name='Daily Maximum Near-Surface Air Temperature', standard_name='air_temperature',
              units=Unit('K'), vertical_coord_type='Surface'),
     cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='hifreq', long_name='precipitation',
              standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('sfcWind', 'wind10', stream='hifreq', long_name='Near-Surface Wind Speed', 
+    cmor_var('sfcWind', 'wind10', stream='hifreq', long_name='Daily-Mean Near-Surface Wind Speed',
              vertical_coord_type='Surface', standard_name='wind_speed'),
     # Second table
     cmor_var('rhs', 'relhum', stream='hifreq', vertical_coord_type='Surface', product="ECHAM_HAM_surface_only"),
     cmor_var('prc', 'aprc', stream='hifreq', vertical_coord_type='Surface', standard_name='convective_precipitation_flux'),
-    cmor_var('sfcWindmax', 'wimax', stream='hifreq', long_name='Near-Surface Wind Speed', 
+    cmor_var('sfcWindmax', 'wimax', stream='hifreq', long_name='Daily Maximum Near-Surface Wind Speed',
              vertical_coord_type='Surface'),
 ]
 
 pdrmip_fixed_daily = [
-    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='fixed_daily', long_name='precipitation',
-             standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product="NetCDF_Gridded"),
-    # Second table
-    cmor_var('prc', 'aprc', stream='fixed_daily', vertical_coord_type='Surface',
-             standard_name='convective_precipitation_flux', product="NetCDF_Gridded"),
+    cmor_var('tasmin', 't2min', stream='hifreq', long_name='Daily Minimum Near-Surface Air Temperature', standard_name='air_temperature',
+             units=Unit('K'), vertical_coord_type='Surface'),
+    cmor_var('tasmax', 't2max', stream='hifreq', long_name='Daily Maximum Near-Surface Air Temperature', standard_name='air_temperature',
+             units=Unit('K'), vertical_coord_type='Surface'),
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='hifreq', long_name='precipitation',
+             standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
+    cmor_var('sfcWind', 'wind10', stream='hifreq', long_name='Daily-Mean Near-Surface Wind Speed',
+             vertical_coord_type='Surface', standard_name='wind_speed'),
+    cmor_var('prc', 'aprc', stream='hifreq', vertical_coord_type='Surface', standard_name='convective_precipitation_flux'),
+    cmor_var('sfcWindmax', 'wimax', stream='hifreq', long_name='Daily Maximum Near-Surface Wind Speed',
+             vertical_coord_type='Surface'),
 ]
 
 pdrmip_fixed_monthly = [
@@ -222,6 +224,7 @@ pdrmip_fixed_monthly = [
              standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product="NetCDF_Gridded"),
     cmor_var('prc', 'aprc', stream='fixed_monthly', vertical_coord_type='Surface',
              standard_name='convective_precipitation_flux', product="NetCDF_Gridded"),
+    cmor_var('sfcWind', 'wind10', stream='fixed_monthly', long_name='Near-Surface Wind Speed', vertical_coord_type='Surface'),
 ]
 
 aer_rad = [
