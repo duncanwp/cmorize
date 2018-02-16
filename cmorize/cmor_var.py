@@ -7,7 +7,7 @@ Adapted from script by Zak Kipling
 import cis
 import iris
 import numpy as np
-from .utils import get_time_delta
+from utils import get_time_delta
 
 
 def get_time_freq(time_coord, pdrmip_format):
@@ -79,7 +79,7 @@ class cmor_var:
         self.cmor_var_name = cmor_var_name
 
     def load_var(self, infile, product=None):
-        from .utils import filename_suffix
+        from utils import filename_suffix
         # Add the stream name
         stream_file = filename_suffix(infile, self.stream)
         # Take the specific variable product over the general one if there is one
