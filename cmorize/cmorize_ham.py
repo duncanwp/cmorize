@@ -225,6 +225,10 @@ pdrmip_fixed_monthly = [
     cmor_var('prc', 'aprc', stream='fixed_monthly', vertical_coord_type='Surface',
              standard_name='convective_precipitation_flux', product="NetCDF_Gridded"),
     cmor_var('sfcWind', 'wind10', stream='fixed_monthly', long_name='Near-Surface Wind Speed', vertical_coord_type='Surface'),
+    cmor_var('prsn', "aprs", stream='fixed_monthly', long_name='Snowfall Flux',
+             standard_name='snowfall_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
+    cmor_var('prl', "aprl", stream='fixed_monthly', long_name='Large-scale Precipitation',
+             standard_name='large_scale_precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
 ]
 
 aer_rad = [
