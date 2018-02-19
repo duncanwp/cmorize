@@ -161,7 +161,7 @@ forcing = [
 cloud = [
     cmor_var('ci', 'CONV_TIME', stream='conv', long_name='Fraction of Time Convection Occurs', units=Unit('1'),
              standard_name='convection_time_fraction', vertical_coord_type='ModelLevel'),
-    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc", "aprs"]), stream='echam',
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc"]), stream='echam',
              long_name='Precipitation',
              standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
     cmor_var('prc', "aprc", stream='echam', long_name='Convective Precipitation',
@@ -194,7 +194,7 @@ pdrmip_daily = [
              units=Unit('K'), vertical_coord_type='Surface'),
     cmor_var('tasmax', 't2max', stream='hifreq', long_name='Daily Maximum Near-Surface Air Temperature', standard_name='air_temperature',
              units=Unit('K'), vertical_coord_type='Surface'),
-    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='hifreq', long_name='precipitation',
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc"]), stream='hifreq', long_name='precipitation',
              standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
     cmor_var('sfcWind', 'wind10', stream='hifreq', long_name='Daily-Mean Near-Surface Wind Speed',
              vertical_coord_type='Surface', standard_name='wind_speed'),
