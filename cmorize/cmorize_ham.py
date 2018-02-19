@@ -210,24 +210,26 @@ pdrmip_fixed_daily = [
              units=Unit('K'), vertical_coord_type='Surface', product='multi_netcdf'),
     cmor_var('tasmax', 't2max', stream='fixed_daily', long_name='Daily Maximum Near-Surface Air Temperature', standard_name='air_temperature',
              units=Unit('K'), vertical_coord_type='Surface', product='multi_netcdf'),
-    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='fixed_daily', long_name='precpitation',
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc"]), stream='fixed_daily', long_name='precpitation',
              standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
-    cmor_var('sfcWind', 'wind10', stream='fixed_daily', long_name='Daily-Mean Near-Surface Wind Speed',
-             vertical_coord_type='Surface', standard_name='wind_speed', product='multi_netcdf'),
+    # This hasn't been fixed, it doesn't appear to need scaling by number of days but I don't know why...
+    #cmor_var('sfcWind', 'wind10', stream='fixed_daily', long_name='Daily-Mean Near-Surface Wind Speed',
+    #         vertical_coord_type='Surface', standard_name='wind_speed', product='multi_netcdf'),
     cmor_var('prc', 'aprc', stream='fixed_daily', vertical_coord_type='Surface', standard_name='convective_precipitation_flux', product='multi_netcdf'),
     cmor_var('sfcWindmax', 'wimax', stream='fixed_daily', long_name='Daily Maximum Near-Surface Wind Speed',
              vertical_coord_type='Surface', product='multi_netcdf'),
 ]
 
 pdrmip_fixed_monthly = [
-    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='fixed_monthly', long_name='precipitation',
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc"]), stream='fixed_monthly', long_name='precipitation',
              standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product="multi_netcdf"),
     cmor_var('prc', 'aprc', stream='fixed_monthly', vertical_coord_type='Surface',
              standard_name='convective_precipitation_flux', product="multi_netcdf"),
-    cmor_var('sfcWind', 'wind10', stream='fixed_monthly', long_name='Near-Surface Wind Speed', vertical_coord_type='Surface', product="multi_netcdf"),
-             standard_name='snowfall_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
-    cmor_var('prl', "aprl", stream='fixed_monthly', long_name='Large-scale Precipitation',
-             standard_name='large_scale_precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
+    # This hasn't been fixed, it doesn't appear to need scaling by number of days but I don't know why...
+    #cmor_var('sfcWind', 'wind10', stream='fixed_monthly', long_name='Near-Surface Wind Speed', vertical_coord_type='Surface', product="multi_netcdf"),
+    #         standard_name='snowfall_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
+    cmor_var('prsn', "aprs", stream='fixed_monthly', long_name='Snowfall Flux',
+             standard_name='snowfall_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product="multi_netcdf"),
 ]
 
 aer_rad = [
