@@ -647,6 +647,7 @@ holuhraun_cloud = select_vars(cloud, [
     'prc',  # (rain_conv)
     'prl',  # (rain_ls)
     'cl',
+    'clw'
 ])
 
 holuhraun_aer_rad = select_vars(aer_rad, [
