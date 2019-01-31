@@ -7,8 +7,8 @@ See https://code.mpimet.mpg.de/projects/afterburner/wiki for a table of afterbur
 (c) Duncan watson-parris 2017
 """
 import argparse
-from .cmor_var import cmor_var, select_vars
-from .calculate_EF_ACI import *
+from cmor_var import cmor_var, select_vars
+from calculate_EF_ACI import *
 import cis
 from cf_units import Unit
 from functools import partial
@@ -45,7 +45,7 @@ def calc_ext550aer(infile, product):
     :return:
     """
     from cis.data_io.gridded_data import make_from_cube
-    from .utils import get_stream_file
+    from utils import get_stream_file
     deltaz = cis.read_data(get_stream_file(infile, 'vphysc'), 'grheightm1', product)
     tau_3d = make_from_cube(sum(cis.read_data_list(infile, ['TAU_MODE_??_550nm'], product)))
     ext_3d = tau_3d / deltaz
@@ -80,7 +80,7 @@ def multiply_sum_by_air_density(infile, variables, product):
     :param variables: CIS variables
     :return:
     """
-    from .utils import get_stream_file
+    from utils import get_stream_file
     summed_var = sum(cis.read_data_list(infile, variables, product))
     vphysc_file = get_stream_file(infile, 'vphysc')
     air_density = cis.read_data(vphysc_file, "rhoam1", product)
@@ -193,7 +193,7 @@ forcing = [
 cloud = [
     cmor_var('ci', 'CONV_TIME', stream='conv', long_name='Fraction of Time Convection Occurs', units=Unit('1'),
              standard_name='convection_time_fraction', vertical_coord_type='ModelLevel'),
-    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc", "aprs"]), stream='echam',
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc"]), stream='echam',
              long_name='Precipitation',
              standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
     cmor_var('prc', "aprc", stream='echam', long_name='Convective Precipitation',
@@ -226,7 +226,7 @@ pdrmip_daily = [
              units=Unit('K'), vertical_coord_type='Surface'),
     cmor_var('tasmax', 't2max', stream='hifreq', long_name='Daily Maximum Near-Surface Air Temperature', standard_name='air_temperature',
              units=Unit('K'), vertical_coord_type='Surface'),
-    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='hifreq', long_name='precipitation',
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc"]), stream='hifreq', long_name='precipitation',
              standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
     cmor_var('sfcWind', 'wind10', stream='hifreq', long_name='Daily-Mean Near-Surface Wind Speed',
              vertical_coord_type='Surface', standard_name='wind_speed'),
@@ -238,29 +238,30 @@ pdrmip_daily = [
 ]
 
 pdrmip_fixed_daily = [
-    cmor_var('tasmin', 't2min', stream='hifreq', long_name='Daily Minimum Near-Surface Air Temperature', standard_name='air_temperature',
-             units=Unit('K'), vertical_coord_type='Surface'),
-    cmor_var('tasmax', 't2max', stream='hifreq', long_name='Daily Maximum Near-Surface Air Temperature', standard_name='air_temperature',
-             units=Unit('K'), vertical_coord_type='Surface'),
-    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='hifreq', long_name='precipitation',
-             standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('sfcWind', 'wind10', stream='hifreq', long_name='Daily-Mean Near-Surface Wind Speed',
-             vertical_coord_type='Surface', standard_name='wind_speed'),
-    cmor_var('prc', 'aprc', stream='hifreq', vertical_coord_type='Surface', standard_name='convective_precipitation_flux'),
-    cmor_var('sfcWindmax', 'wimax', stream='hifreq', long_name='Daily Maximum Near-Surface Wind Speed',
-             vertical_coord_type='Surface'),
+    cmor_var('tasmin', 't2min', stream='fixed_daily', long_name='Daily Minimum Near-Surface Air Temperature', standard_name='air_temperature',
+             units=Unit('K'), vertical_coord_type='Surface', product='multi_netcdf'),
+    cmor_var('tasmax', 't2max', stream='fixed_daily', long_name='Daily Maximum Near-Surface Air Temperature', standard_name='air_temperature',
+             units=Unit('K'), vertical_coord_type='Surface', product='multi_netcdf'),
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc"]), stream='fixed_daily', long_name='precpitation',
+             standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
+    # This hasn't been fixed, it doesn't appear to need scaling by number of days but I don't know why...
+    #cmor_var('sfcWind', 'wind10', stream='fixed_daily', long_name='Daily-Mean Near-Surface Wind Speed',
+    #         vertical_coord_type='Surface', standard_name='wind_speed', product='multi_netcdf'),
+    cmor_var('prc', 'aprc', stream='fixed_daily', vertical_coord_type='Surface', standard_name='convective_precipitation_flux', product='multi_netcdf'),
+    cmor_var('sfcWindmax', 'wimax', stream='fixed_daily', long_name='Daily Maximum Near-Surface Wind Speed',
+             vertical_coord_type='Surface', product='multi_netcdf'),
 ]
 
 pdrmip_fixed_monthly = [
-    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprs", "aprc"]), stream='fixed_monthly', long_name='precipitation',
-             standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product="NetCDF_Gridded"),
+    cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc"]), stream='fixed_monthly', long_name='precipitation',
+             standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product="multi_netcdf"),
     cmor_var('prc', 'aprc', stream='fixed_monthly', vertical_coord_type='Surface',
-             standard_name='convective_precipitation_flux', product="NetCDF_Gridded"),
-    cmor_var('sfcWind', 'wind10', stream='fixed_monthly', long_name='Near-Surface Wind Speed', vertical_coord_type='Surface'),
+             standard_name='convective_precipitation_flux', product="multi_netcdf"),
+    # This hasn't been fixed, it doesn't appear to need scaling by number of days but I don't know why...
+    #cmor_var('sfcWind', 'wind10', stream='fixed_monthly', long_name='Near-Surface Wind Speed', vertical_coord_type='Surface', product="multi_netcdf"),
+    #         standard_name='snowfall_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
     cmor_var('prsn', "aprs", stream='fixed_monthly', long_name='Snowfall Flux',
-             standard_name='snowfall_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
-    cmor_var('prl', "aprl", stream='fixed_monthly', long_name='Large-scale Precipitation',
-             standard_name='large_scale_precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product='multi_netcdf'),
+             standard_name='snowfall_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface', product="multi_netcdf"),
 ]
 
 aer_rad = [
@@ -808,6 +809,8 @@ if __name__ == '__main__':
                         help="AeroCom Holuhraun experiment diagnostics")
     parser.add_argument('--remsens', action='append_const', const=remsens_3hrly, dest='params',
                         help="Diagnostics for Nick's remote sensing experiment")
+    parser.add_argument('--fixed_pdrmip', action='append_const', const=pdrmip_fixed_daily+pdrmip_fixed_monthly, dest='params',
+                                    help="Fixed PDRMIP diagnostics (due to hifreq output issue)")
     parser.add_argument('--all', action='append_const', const=all_vars, dest='params')
     parser.add_argument('--trajectory', action='append_const', const=trajectory, dest='params')
 
