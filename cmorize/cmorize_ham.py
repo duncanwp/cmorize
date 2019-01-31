@@ -16,6 +16,8 @@ import itertools
 
 unitless = Unit(None)
 
+ACCELERATION_DUE_TO_GRAVITY = 9.8
+
 
 def calc_od440aer(infile, product):
     tau_550, ang_550 = cis.read_data_list(infile, ["TAU_2D_550nm", "ANG_550nm_865nm"], product)
@@ -87,20 +89,50 @@ def multiply_sum_by_air_density(infile, variables, product):
     return res
 
 
+def calc_pbl_height(infile, product):
+    """
+    I want units of m-1, Tau *should* be in units of 1 so I just need to divide by layer thickness
+    :param infile:
+    :param product:
+    :return:
+    """
+    from .utils import get_stream_file
+    altitude = cis.read_data(get_stream_file(infile, 'vphysc'), 'geom1', product) / ACCELERATION_DUE_TO_GRAVITY
+    pbl = cis.read_data(get_stream_file(infile, 'vphysc'), 'pbl', product)
+    pbl_height = altitude[pbl.data]
+    return pbl_height
+
+
 core = [
     cmor_var('area', 'gboxarea', stream='rad', long_name='horizontal area of grid-box', standard_name='cell_area',
              units=Unit('m^2'), vertical_coord_type='Surface'),
+    cmor_var('orog', 'geosp', stream='echam', standard_name='surface_altitude',
+             units=Unit('m'), vertical_coord_type='Surface', scaling=1./ACCELERATION_DUE_TO_GRAVITY),
+    cmor_var('landf', 'slm', stream='echam', standard_name='land_binary_mask', units=Unit('1'),
+             vertical_coord_type='Surface'),
+
+    cmor_var('zmla', calc_pbl_height, stream='vphysc', standard_name='atmosphere_boundary_layer_thickness',
+             units=Unit('m'), vertical_coord_type='Surface'),
     cmor_var('layer_thick', 'grheightm1', stream='vphysc', long_name='Layer thickness', standard_name='cell_thickness',
              units=Unit('m'), vertical_coord_type='ModelLevel'),
+    cmor_var('zgeo', 'geom1', stream='vphysc', long_name='Geopotential', standard_name='geopotential',
+             units=Unit('m')),
+    cmor_var('zh', 'geom1', stream='vphysc', long_name='Geopotential Height', standard_name='geopotential_height',
+             units=Unit('m'), scaling=1. / ACCELERATION_DUE_TO_GRAVITY),
+
     cmor_var('ps', 'aps', stream='echam', long_name='Surface air pressure', standard_name='surface_air_pressure',
              units=Unit('Pa'), vertical_coord_type='Surface'),
     cmor_var('psl', 'var151', stream='after', long_name='Sea Level Pressure', standard_name='air_pressure_at_sea_level',
              units=Unit('Pa'), vertical_coord_type='Surface'),
-    cmor_var('pho', 'rhoam1', stream='vphysc', long_name='Air density', standard_name='air_density',
+    cmor_var('rho', 'rhoam1', stream='vphysc', long_name='Air density', standard_name='air_density',
              units=Unit('kg m-3')),
+    cmor_var('airmass', 'grmassm1', stream='vphysc', standard_name='atmosphere_mass_of_air_per_unit_area',
+             units=Unit('kg')),
 
     cmor_var('ts', 'tslm1', stream='echam', long_name='surface temperature of land',
              standard_name='surface_temperature', units=Unit('K')),
+    cmor_var('ta', 'st', stream='echam', standard_name='air_temperature', units=Unit('K'),
+             vertical_coord_type='ModelLevel'),
 
     cmor_var('hus', 'q', stream='echam', long_name='specific humidity', standard_name='specific_humidity',
              units=Unit('1'), vertical_coord_type='ModelLevel'),
@@ -398,6 +430,7 @@ double_rad = [
              scaling=-1.)
 ]
 
+
 aerosol = [
     cmor_var('emioa', 'emi_OC', stream='emi', long_name='total emission of POM',
              standard_name='tendency_of_atmosphere_mass_content_of_particulate_organic_matter_dry_aerosol_due_to_net_chemical_production_and_emission',
@@ -545,8 +578,38 @@ aerosol = [
              long_name='Surface concentration SS',
              standard_name='mass_concentration_of_seasalt_dry_aerosol_in_air', units=Unit('kg m-3'),
              vertical_coord_type='Surface'),
-]
 
+    cmor_var('conccnmodeNS', partial(sum_variables, variables='NUM_NS'), stream='tracer',
+             long_name='number concentration of mode NS', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
+    cmor_var('conccnmodeKS', partial(sum_variables, variables='NUM_KS'), stream='tracer',
+             long_name='number concentration of mode KS', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
+    cmor_var('conccnmodeAS', partial(sum_variables, variables='NUM_AS'), stream='tracer',
+             long_name='number concentration of mode AS', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
+    cmor_var('conccnmodeCS', partial(sum_variables, variables='NUM_CS'), stream='tracer',
+             long_name='number concentration of mode CS', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
+    cmor_var('conccnmodeKI', partial(sum_variables, variables='NUM_KI'), stream='tracer',
+             long_name='number concentration of mode KI', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
+    cmor_var('conccnmodeAI', partial(sum_variables, variables='NUM_AI'), stream='tracer',
+             long_name='number concentration of mode AI', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
+    cmor_var('conccnmodeCI', partial(sum_variables, variables='NUM_CI'), stream='tracer',
+             long_name='number concentration of mode CI', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
+
+    cmor_var('ddrymodeNS', 'rdry_NS', stream='ham',
+             long_name='dry diameter of mode NS', units=Unit('m'), vertical_coord_type='ModelLevel'),
+    cmor_var('ddrymodeKS', 'rdry_KS', stream='ham',
+             long_name='dry diameter of mode KS', units=Unit('m'), vertical_coord_type='ModelLevel'),
+    cmor_var('ddrymodeAS', 'rdry_AS', stream='ham',
+             long_name='dry diameter of mode AS', units=Unit('m'), vertical_coord_type='ModelLevel'),
+    cmor_var('ddrymodeCS', 'rdry_CS', stream='ham',
+             long_name='dry diameter of mode CS', units=Unit('m'), vertical_coord_type='ModelLevel'),
+    cmor_var('ddrymodeKI', 'rdry_KI', stream='ham',
+             long_name='dry diameter of mode KI', units=Unit('m'), vertical_coord_type='ModelLevel'),
+    cmor_var('ddrymodeAI', 'rdry_AI', stream='ham',
+             long_name='dry diameter of mode AI', units=Unit('m'),  vertical_coord_type='ModelLevel'),
+    cmor_var('ddrymodeCI', 'rdry_CI', stream='ham',
+             long_name='dry diameter of mode CI', units=Unit('m'), vertical_coord_type='ModelLevel')
+
+]
 
 all_vars = core + cloud + rad + aerosol
 
@@ -679,6 +742,48 @@ holuhraun_aer = select_vars(aerosol, [
 
 holuhraun = holuhraun_cloud + holuhraun_aer_rad + holuhraun_core + holuhraun_aer + rad + forcing
 
+# -------------- AeroCom Trajectory Experiment ---------------
+
+
+trajectory_2d = select_vars(core, [
+    'orog',
+    'landf',
+    'area',
+
+    'ps',
+    'zmla',
+    'u10',
+    'v10',
+    'tas',
+    'hfss',
+])
+
+trajectory_cloud = select_vars(cloud, ['prl', 'prc'])
+
+trajectory_3d = select_vars(core, [
+    'zgeo',
+    'ta',
+    # 'ua',  # I'll have to run afterburner if I really need these (I suspect they're in the GRIB files though
+    # 'va',
+    'hus',
+    # 'omega',
+    'hur',
+    'rho',
+    # 'plev',  # This will be in the other files anyway
+    'airmass',
+    'zh',
+    'layer_thick',
+])
+
+trajectory_aer = select_vars(aerosol, ['conccnmodeNS', 'conccnmodeKS', 'conccnmodeAS', 'conccnmodeCS',
+                                       'conccnmodeKI', 'conccnmodeAI', 'conccnmodeCI',
+                                       'mmroa', 'mmrbc', 'mmrso4', 'mmrss', 'mmrdu',
+                                       'ddrymodeNS', 'ddrymodeKS', 'ddrymodeAS', 'ddrymodeCS',
+                                       'ddrymodeKI', 'ddrymodeAI', 'ddrymodeCI'])
+
+trajectory = trajectory_2d + trajectory_cloud + trajectory_3d + trajectory_aer
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -708,6 +813,7 @@ if __name__ == '__main__':
     parser.add_argument('--fixed_pdrmip', action='append_const', const=pdrmip_fixed_daily+pdrmip_fixed_monthly, dest='params',
                                     help="Fixed PDRMIP diagnostics (due to hifreq output issue)")
     parser.add_argument('--all', action='append_const', const=all_vars, dest='params')
+    parser.add_argument('--trajectory', action='append_const', const=trajectory, dest='params')
 
     freq_grp = parser.add_mutually_exclusive_group()
     freq_grp.add_argument("-m", "--monthly", action="store_true",
