@@ -82,6 +82,7 @@ def multiply_sum_by_air_density(infile, variables, product):
     """
     from utils import get_stream_file
     summed_var = sum(cis.read_data_list(infile, variables, product))
+    # TODO - SHOULD this be the mean density??
     vphysc_file = get_stream_file(infile, 'vphysc')
     air_density = cis.read_data(vphysc_file, "rhoam1", product)
     res = summed_var * air_density.data
@@ -96,10 +97,17 @@ def calc_pbl_height(infile, product):
     :param product:
     :return:
     """
-    from .utils import get_stream_file
+    import numpy as np
+    from utils import get_stream_file
     altitude = cis.read_data(get_stream_file(infile, 'vphysc'), 'geom1', product) / ACCELERATION_DUE_TO_GRAVITY
     pbl = cis.read_data(get_stream_file(infile, 'vphysc'), 'pbl', product)
-    pbl_height = altitude[pbl.data]
+
+    # Move the height dim to the front
+    altitude.transpose((1,0,2,3))
+
+    pbl_height = pbl.copy(data=np.asarray(pbl.data, dtype=int).choose(altitude.data))
+    pbl_height.rename("boundary_layer_height")
+    pbl_height.units = Unit('m')
     return pbl_height
 
 
@@ -111,34 +119,34 @@ core = [
     cmor_var('landf', 'slm', stream='echam', standard_name='land_binary_mask', units=Unit('1'),
              vertical_coord_type='Surface'),
 
-    cmor_var('zmla', calc_pbl_height, stream='vphysc', standard_name='atmosphere_boundary_layer_thickness',
-             units=Unit('m'), vertical_coord_type='Surface'),
     cmor_var('layer_thick', 'grheightm1', stream='vphysc', long_name='Layer thickness', standard_name='cell_thickness',
              units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('zgeo', 'geom1', stream='vphysc', long_name='Geopotential', standard_name='geopotential',
-             units=Unit('m')),
-    cmor_var('zh', 'geom1', stream='vphysc', long_name='Geopotential Height', standard_name='geopotential_height',
-             units=Unit('m'), scaling=1. / ACCELERATION_DUE_TO_GRAVITY),
+    cmor_var('zgeo', 'geom1', stream='vphysc', long_name='Geopotential (units are actually m2 s-2...)', standard_name='geopotential',
+             units=Unit('m3 s-2')),
+    cmor_var('zh', 'geom1', stream='vphysc', long_name='Geopotential Height (units are actually m)', standard_name='geopotential_height',
+             units=Unit('m3 s-2'), scaling=1. / ACCELERATION_DUE_TO_GRAVITY),
 
-    cmor_var('ps', 'aps', stream='echam', long_name='Surface air pressure', standard_name='surface_air_pressure',
+    cmor_var('ps', 'aps', stream='echamm', long_name='Surface air pressure', standard_name='surface_air_pressure',
              units=Unit('Pa'), vertical_coord_type='Surface'),
     cmor_var('psl', 'var151', stream='after', long_name='Sea Level Pressure', standard_name='air_pressure_at_sea_level',
              units=Unit('Pa'), vertical_coord_type='Surface'),
-    cmor_var('rho', 'rhoam1', stream='vphysc', long_name='Air density', standard_name='air_density',
+    cmor_var('rho', 'rhoam1', stream='vphyscm', long_name='Air density', standard_name='air_density',
              units=Unit('kg m-3')),
-    cmor_var('airmass', 'grmassm1', stream='vphysc', standard_name='atmosphere_mass_of_air_per_unit_area',
+    cmor_var('airmass', 'grmassm1', stream='vphyscm', standard_name='atmosphere_mass_of_air_per_unit_area',
              units=Unit('kg')),
 
-    cmor_var('ts', 'tslm1', stream='echam', long_name='surface temperature of land',
+    cmor_var('ts', 'tslm1', stream='echamm', long_name='surface temperature of land',
              standard_name='surface_temperature', units=Unit('K')),
-    cmor_var('ta', 'st', stream='echam', standard_name='air_temperature', units=Unit('K'),
-             vertical_coord_type='ModelLevel'),
 
-    cmor_var('hus', 'q', stream='echam', long_name='specific humidity', standard_name='specific_humidity',
+    cmor_var('hus', 'q', stream='echamm', long_name='specific humidity', standard_name='specific_humidity',
              units=Unit('1'), vertical_coord_type='ModelLevel'),
 
     cmor_var('evspsbl', 'evap', stream='echam', long_name='Evaporation', standard_name='water_evaporation_flux',
              units=Unit('kg m-2 s-1'), vertical_coord_type='ModelLevel'),
+    
+    cmor_var('wap', 'var135', stream='after', long_name='omega (=dp/dt)',
+             standard_name='lagrangian_tendency_of_air_pressure', units=Unit('Pa s-1'),
+             vertical_coord_type='ModelLevel'),
 
     # Scale so that it's upward
     cmor_var('hfls', 'ahfl', stream='echam', long_name='Surface Upward Latent Heat Flux',
@@ -147,30 +155,65 @@ core = [
     cmor_var('hfss', 'ahfs', stream='echam', long_name='Surface Upward Sensible Heat Flux',
              standard_name='surface_upward_sensible_heat_flux', units=Unit('W m-2'), scaling=-1.0),
 
-    cmor_var('hur', 'relhum', stream='echam',
+    cmor_var('hur', 'relhum', stream='echamm',
              long_name='Relative Humidity', standard_name='relative_humidity',
              units=Unit('%'), vertical_coord_type='ModelLevel'),
 
-    cmor_var('hurs', 'relhum', stream='echam', product="ECHAM_HAM_surface_only",
+    cmor_var('hurs', 'relhum', stream='echamm', product="ECHAM_HAM_surface_only",
              long_name='Near-Surface Relative Humidity', standard_name='relative_humidity',
              units=Unit('%'), vertical_coord_type='Surface'),
 
-    cmor_var('huss', 'q', stream='echam', long_name='specific humidity', product="ECHAM_HAM_surface_only",
+    cmor_var('huss', 'q', stream='echamm', long_name='specific humidity', product="ECHAM_HAM_surface_only",
              standard_name='specific_humidity', units=Unit('1'), vertical_coord_type='Surface'),
 
     cmor_var('sfcWind', 'wind10', stream='echam', long_name='Near-Surface Wind Speed', vertical_coord_type='Surface'),
+    cmor_var('tas', 'temp2', stream='echamm', long_name='Near-Surface Air Temperature', standard_name='air_temperature',
+             units=Unit('K'), vertical_coord_type='Surface'),
+    cmor_var('uas', 'u10', stream='echamm', long_name='Eastward Near-Surface Wind', standard_name='eastward_wind',
+             vertical_coord_type='Surface'),
+    cmor_var('vas', 'v10', stream='echamm', long_name='Northward Near-Surface Wind', standard_name='northward_wind',
+             vertical_coord_type='Surface'),
+]
+
+core_inst = [
+    cmor_var('hus', 'q', stream='echam', long_name='specific humidity', standard_name='specific_humidity',
+             units=Unit('1'), vertical_coord_type='ModelLevel'),
+
     cmor_var('tas', 'temp2', stream='echam', long_name='Near-Surface Air Temperature', standard_name='air_temperature',
              units=Unit('K'), vertical_coord_type='Surface'),
-    cmor_var('uas', 'u10', stream='echam', long_name='Eastward Near-Surface Wind', standard_name='eastward_wind',
-             vertical_coord_type='Surface'),
-    cmor_var('vas', 'v10', stream='echam', long_name='Northward Near-Surface Wind', standard_name='northward_wind',
-             vertical_coord_type='Surface'),
+
+    cmor_var('hur', 'relhum', stream='echam',
+             long_name='Relative Humidity', standard_name='relative_humidity',
+             units=Unit('%'), vertical_coord_type='ModelLevel'),
+    
+    cmor_var('zmla', calc_pbl_height, stream='vphysc', standard_name='atmosphere_boundary_layer_thickness',
+             units=Unit('m'), vertical_coord_type='Surface'),
+        
+    cmor_var('ta', 'st', stream='after', long_name='Air Temperature',
+             standard_name='air_temperature', units=Unit('K')),
+    cmor_var('wap', 'var135', stream='after', long_name='omega (=dp/dt)',
+             standard_name='lagrangian_tendency_of_air_pressure', units=Unit('Pa s-1')),
+    cmor_var('ps', 'aps', stream='echam', long_name='Surface air pressure', standard_name='surface_air_pressure',
+             units=Unit('Pa'), vertical_coord_type='Surface'),
+    cmor_var('rho', 'rhoam1', stream='vphysc', long_name='Air density', standard_name='air_density',
+             units=Unit('kg m-3')),
+
+    cmor_var('zg', 'var156', stream='after', long_name='Geopotential Height', standard_name='geopotential_height',
+             units=Unit('m')),
+    cmor_var('ua', 'var131', stream='after', long_name='Eastward Wind', standard_name='eastward_wind',
+             units=Unit('m s-1')),
+    cmor_var('va', 'var132', stream='after', long_name='Northward Wind', standard_name='northward_wind',
+             units=Unit('m s-1')),
+    cmor_var('zgeo', 'geom1', stream='vphysc', long_name='Geopotential (units are actually m2 s-2...)', standard_name='geopotential',
+             units=Unit('m3 s-2')),
 ]
 
 # This uses the netCDF_Gridded product since the vertical coordinates are straight pressure levels
 pdrmip_stratified_fields = [
     cmor_var('hur', 'relhum', stream='after', long_name='Relative Humidity',
              standard_name='relative_humidity', units=Unit('%'), product='multi_netcdf'),
+    cmor_var('hus', 'q', stream='after', long_name='Specific Humidity', standard_name='specific_humidity',
+             units=Unit('1'), product='multi_netcdf'),
     cmor_var('ta', 'st', stream='after', long_name='Air Temperature',
              standard_name='air_temperature', units=Unit('K'), product='multi_netcdf'),
     cmor_var('wap', 'var135', stream='after', long_name='omega (=dp/dt)',
@@ -217,8 +260,8 @@ cloud = [
              vertical_coord_type='Column'),
     cmor_var('cdnc_cld_top', 'CDNC_CT', stream='activ', long_name='cloud droplet number concentration near cloud top',
              units=Unit('cm-3'), vertical_coord_type='CloudTop'),
-    cmor_var('r_e', 'REFFL_CT', stream='activ', long_name='cloud top  effective radius, liquid', units=Unit('m'),
-             vertical_coord_type='CloudTop')
+    cmor_var('r_e', partial(ratio_variables, var1='REFFL_CT', var2='REFFL_TIME'), stream='activ', 
+        long_name='cloud top  effective radius, liquid', units=Unit('m'), vertical_coord_type='CloudTop')
 ]
 
 pdrmip_daily = [
@@ -265,13 +308,13 @@ pdrmip_fixed_monthly = [
 ]
 
 aer_rad = [
-    cmor_var('od550aer', 'TAU_2D_550nm', stream='rad', long_name='AOD@550nm',
+    cmor_var('od550aer', 'TAU_2D_550nm', stream='radm', long_name='AOD@550nm',
              standard_name='atmosphere_optical_thickness_due_to_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column'),
-    cmor_var('od440aer', calc_od440aer, stream='rad', long_name='AOD@440nm',
+    cmor_var('od440aer', calc_od440aer, stream='radm', long_name='AOD@440nm',
              standard_name='atmosphere_optical_thickness_due_to_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column'),
-    cmor_var('od870aer', calc_od870aer, stream='rad', long_name='AOD@870nm',
+    cmor_var('od870aer', calc_od870aer, stream='radm', long_name='AOD@870nm',
              standard_name='atmosphere_optical_thickness_due_to_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column'),
     cmor_var('od550lt1aer', partial(sum_variables, variables=['TAU_MODE_K?_550nm', 'TAU_MODE_A?_550nm']), stream='rad',
@@ -279,38 +322,38 @@ aer_rad = [
              standard_name='atmosphere_optical_thickness_due_to_pm1_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column',
              comment='Ill-defined: total AOT from Aitken and accumulation modes.'),
-    cmor_var('abs550aer', 'ABS_2D_550nm', stream='rad', long_name='Absorption AOD@550nm',
+    cmor_var('abs550aer', 'ABS_2D_550nm', stream='radm', long_name='Absorption AOD@550nm',
              standard_name='atmosphere_absorption_optical_thickness_due_to_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column'),
-    cmor_var('od550aerh2o', 'TAU_COMP_WAT_550nm', stream='rad', long_name='Aerosol Water AOD@550nm',
+    cmor_var('od550aerh2o', 'TAU_COMP_WAT_550nm', stream='radm', long_name='Aerosol Water AOD@550nm',
              standard_name='atmosphere_optical_thickness_due_to_water_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column',
              comment='Ill-defined: model allows 4 modes of varying mixtures.'),
-    cmor_var('abs550bc', 'ABS_COMP_BC_550nm', stream='rad', long_name='Absorption AOD@550nm due to BC',
+    cmor_var('abs550bc', 'ABS_COMP_BC_550nm', stream='radm', long_name='Absorption AOD@550nm due to BC',
              standard_name='atmosphere_absorption_optical_thickness_due_to_black_carbon_ambient_aerosol',
              units=Unit('1'), vertical_coord_type='Column',
              comment='Ill-defined: model allows 4 modes of varying mixtures.'),
-    cmor_var('od550so4', 'TAU_COMP_SO4_550nm', stream='rad', long_name='Sulfate AOD@550nm',
+    cmor_var('od550so4', 'TAU_COMP_SO4_550nm', stream='radm', long_name='Sulfate AOD@550nm',
              standard_name='atmosphere_optical_thickness_due_to_sulfate_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column',
              comment='Ill-defined: model allows 4 modes of varying mixtures.'),
-    cmor_var('od550bc', 'TAU_COMP_BC_550nm', stream='rad', long_name='Black carbon AOD@550nm',
+    cmor_var('od550bc', 'TAU_COMP_BC_550nm', stream='radm', long_name='Black carbon AOD@550nm',
              standard_name='atmosphere_optical_thickness_due_to_black_carbon_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column',
              comment='Ill-defined: model allows 4 modes of varying mixtures.'),
-    cmor_var('od550oa', 'TAU_COMP_OC_550nm', stream='rad', long_name='POM AOD@550nm',
+    cmor_var('od550oa', 'TAU_COMP_OC_550nm', stream='radm', long_name='POM AOD@550nm',
              standard_name='atmosphere_optical_thickness_due_to_particulate_organic_matter_ambient_aerosol',
              units=Unit('1'), vertical_coord_type='Column',
              comment='Ill-defined: model allows 4 modes of varying mixtures.'),
-    cmor_var('od550ss', 'TAU_COMP_SS_550nm', stream='rad', long_name='Sea Salt AOD@550nm',
+    cmor_var('od550ss', 'TAU_COMP_SS_550nm', stream='radm', long_name='Sea Salt AOD@550nm',
              standard_name='atmosphere_optical_thickness_due_to_seasalt_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column',
              comment='Ill-defined: model allows 4 modes of varying mixtures.'),
-    cmor_var('od550dust', 'TAU_COMP_DU_550nm', stream='rad', long_name='Dust AOD@550nm',
+    cmor_var('od550dust', 'TAU_COMP_DU_550nm', stream='radm', long_name='Dust AOD@550nm',
              standard_name='atmosphere_optical_thickness_due_to_dust_ambient_aerosol', units=Unit('1'),
              vertical_coord_type='Column',
              comment='Ill-defined: model allows 4 modes of varying mixtures.'),
-    cmor_var('ext550aer', calc_ext550aer, stream='rad', long_name='3D Aerosol Extinction @550nm',
+    cmor_var('ext550aer', calc_ext550aer, stream='radm', long_name='3D Aerosol Extinction @550nm',
              units=Unit('m-1'), standard_name='volume_extinction_coefficient_in_air_due_to_ambient_aerosol_particles')
 ]
 
@@ -519,33 +562,33 @@ aerosol = [
              standard_name='tendency_of_atmosphere_mass_content_of_black_carbon_dry_aerosol_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
 
-    cmor_var('mmraerh2o', partial(sum_variables, variables='WAT_??'), stream='tracer', long_name='mmr of aerosol water',
+    cmor_var('mmraerh2o', partial(sum_variables, variables='WAT_??'), stream='tracerm', long_name='mmr of aerosol water',
              standard_name='mass_fraction_of_water_in_ambient_aerosol_in_air', units=Unit('1'),
              vertical_coord_type='ModelLevel'),
-    cmor_var('mmroa', partial(sum_variables, variables='OC_??'), stream='tracer', long_name='POM',
+    cmor_var('mmroa', partial(sum_variables, variables='OC_??'), stream='tracerm', long_name='POM',
              standard_name='mass_fraction_of_particulate_organic_matter_dry_aerosol_in_air', units=Unit('1'),
              vertical_coord_type='ModelLevel'),
-    cmor_var('mmrbc', partial(sum_variables, variables='BC_??'), stream='tracer', long_name='BC',
+    cmor_var('mmrbc', partial(sum_variables, variables='BC_??'), stream='tracerm', long_name='BC',
              standard_name='mass_fraction_ of_black_carbon_dry_aerosol_in_air', units=Unit('1'),
              vertical_coord_type='ModelLevel'),
-    cmor_var('mmrso2', 'SO2', stream='tracer', long_name='SO2',
+    cmor_var('mmrso2', 'SO2', stream='tracerm', long_name='SO2',
              standard_name='mass_fraction_of_sulfur_dioxide_in_air', units=Unit('1'),
              vertical_coord_type='ModelLevel'),
-    cmor_var('mmrso4', partial(sum_variables, variables='SO4_??'), stream='tracer', long_name='SO4',
+    cmor_var('mmrso4', partial(sum_variables, variables='SO4_??'), stream='tracerm', long_name='SO4',
              standard_name='mass_fraction_of_sulfate_dry_aerosol_in_air', units=Unit('1'),
              vertical_coord_type='ModelLevel'),
-    cmor_var('mmrss', partial(sum_variables, variables='SS_??'), stream='tracer', long_name='Sea Salt',
+    cmor_var('mmrss', partial(sum_variables, variables='SS_??'), stream='tracerm', long_name='Sea Salt',
              standard_name='mass_fraction_ of_seasalt_dry_aerosol_in_air', units=Unit('1'),
              vertical_coord_type='ModelLevel'),
-    cmor_var('mmrdu', partial(sum_variables, variables='DU_??'), stream='tracer', long_name='Dust',
+    cmor_var('mmrdu', partial(sum_variables, variables='DU_??'), stream='tracerm', long_name='Dust',
              standard_name='mass_fraction_ of_dust_dry_aerosol_in_air', units=Unit('1'),
              vertical_coord_type='ModelLevel'),
 
-    cmor_var('vmrso2', 'SO2', stream='tracer', long_name='SO2', standard_name='mole_fraction_of_sulfur_dioxide_in_air',
+    cmor_var('vmrso2', 'SO2', stream='tracerm', long_name='SO2', standard_name='mole_fraction_of_sulfur_dioxide_in_air',
              units=Unit('1'), vertical_coord_type='ModelLevel', scaling=(28.97 / 64.066)),
-    cmor_var('vmrso4', 'H2SO4', stream='tracer', long_name='SO4', standard_name='mole_fraction_of_sulfate_in_air',
+    cmor_var('vmrso4', 'H2SO4', stream='tracerm', long_name='SO4', standard_name='mole_fraction_of_sulfate_in_air',
              units=Unit('1'), vertical_coord_type='ModelLevel', scaling=(28.97 / 96.063)),
-    cmor_var('vmrdms', 'DMS', stream='tracer', long_name='DMS',
+    cmor_var('vmrdms', 'DMS', stream='tracerm', long_name='DMS',
              standard_name='mole_fraction_of_dimethyl_sulfide_in_air', units=Unit('1'),
              vertical_coord_type='ModelLevel', scaling=(28.97 / 62.134)),
 
@@ -553,60 +596,60 @@ aerosol = [
              standard_name='tendency_of_atmosphere_mass_content_of_sulfate_dry_aerosol_due_to_net_chemical_production_and_emission',
              units=Unit('kg m-2 s-1'), vertical_coord_type='ModelLevel'),
 
-    cmor_var('concbc', partial(multiply_sum_by_air_density, variables='BC_??'), stream='tracer',
+    cmor_var('concbc', partial(multiply_sum_by_air_density, variables='BC_??'), stream='tracerm',
              long_name='Concentration of Black Carbon Aerosol', units=Unit('kg m-3'), vertical_coord_type='ModelLevel'),
-    cmor_var('concso4', partial(multiply_sum_by_air_density, variables='SO4_??'), stream='tracer',
+    cmor_var('concso4', partial(multiply_sum_by_air_density, variables='SO4_??'), stream='tracerm',
              long_name='Concentration of SO4', units=Unit('kg m-3'), vertical_coord_type='ModelLevel'),
 
-    cmor_var('sconcoa', partial(multiply_sum_by_air_density, variables='OC_??'), stream='tracer',
+    cmor_var('sconcoa', partial(multiply_sum_by_air_density, variables='OC_??'), stream='tracerm',
              long_name='Surface concentration POM', product='ECHAM_HAM_surface_only',
              standard_name='mass_concentration_of_particulate_organic_matter_dry_aerosol_in_air', units=Unit('kg m-3'),
              vertical_coord_type='Surface'),
-    cmor_var('sconcbc', partial(multiply_sum_by_air_density, variables='BC_??'), stream='tracer',
+    cmor_var('sconcbc', partial(multiply_sum_by_air_density, variables='BC_??'), stream='tracerm',
              long_name='Surface concentration BC', product='ECHAM_HAM_surface_only',
              standard_name='mass_concentration_of_black_carbon_dry_aerosol_in_air', units=Unit('kg m-3'),
              vertical_coord_type='Surface'),
-    cmor_var('sconcso4', partial(multiply_sum_by_air_density, variables='SO4_??'), stream='tracer',
+    cmor_var('sconcso4', partial(multiply_sum_by_air_density, variables='SO4_??'), stream='tracerm',
              long_name='Surface concentration SO4',
              standard_name='mass_concentration_of_sulfate_dry_aerosol_in_air', units=Unit('kg m-3'),
              vertical_coord_type='Surface'),
-    cmor_var('sconcdust', partial(multiply_sum_by_air_density, variables='DU_??'), stream='tracer',
+    cmor_var('sconcdust', partial(multiply_sum_by_air_density, variables='DU_??'), stream='tracerm',
              long_name='Surface concentration DUST',
              standard_name='mass_concentration_of_dust_dry_aerosol_in_air', units=Unit('kg m-3'),
              vertical_coord_type='Surface'),
-    cmor_var('sconcss', partial(multiply_sum_by_air_density, variables='SS_??'), stream='tracer',
+    cmor_var('sconcss', partial(multiply_sum_by_air_density, variables='SS_??'), stream='tracerm',
              long_name='Surface concentration SS',
              standard_name='mass_concentration_of_seasalt_dry_aerosol_in_air', units=Unit('kg m-3'),
              vertical_coord_type='Surface'),
 
-    cmor_var('conccnmodeNS', partial(sum_variables, variables='NUM_NS'), stream='tracer',
+    cmor_var('conccnmodeNS', partial(multiply_sum_by_air_density, variables='NUM_NS'), stream='tracerm',
              long_name='number concentration of mode NS', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
-    cmor_var('conccnmodeKS', partial(sum_variables, variables='NUM_KS'), stream='tracer',
+    cmor_var('conccnmodeKS', partial(multiply_sum_by_air_density, variables='NUM_KS'), stream='tracerm',
              long_name='number concentration of mode KS', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
-    cmor_var('conccnmodeAS', partial(sum_variables, variables='NUM_AS'), stream='tracer',
+    cmor_var('conccnmodeAS', partial(multiply_sum_by_air_density, variables='NUM_AS'), stream='tracerm',
              long_name='number concentration of mode AS', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
-    cmor_var('conccnmodeCS', partial(sum_variables, variables='NUM_CS'), stream='tracer',
+    cmor_var('conccnmodeCS', partial(multiply_sum_by_air_density, variables='NUM_CS'), stream='tracerm',
              long_name='number concentration of mode CS', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
-    cmor_var('conccnmodeKI', partial(sum_variables, variables='NUM_KI'), stream='tracer',
+    cmor_var('conccnmodeKI', partial(multiply_sum_by_air_density, variables='NUM_KI'), stream='tracerm',
              long_name='number concentration of mode KI', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
-    cmor_var('conccnmodeAI', partial(sum_variables, variables='NUM_AI'), stream='tracer',
+    cmor_var('conccnmodeAI', partial(multiply_sum_by_air_density, variables='NUM_AI'), stream='tracerm',
              long_name='number concentration of mode AI', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
-    cmor_var('conccnmodeCI', partial(sum_variables, variables='NUM_CI'), stream='tracer',
+    cmor_var('conccnmodeCI', partial(multiply_sum_by_air_density, variables='NUM_CI'), stream='tracerm',
              long_name='number concentration of mode CI', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
 
-    cmor_var('ddrymodeNS', 'rdry_NS', stream='ham',
+    cmor_var('ddrymodeNS', 'rdry_NS', stream='hamm',
              long_name='dry diameter of mode NS', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeKS', 'rdry_KS', stream='ham',
+    cmor_var('ddrymodeKS', 'rdry_KS', stream='hamm',
              long_name='dry diameter of mode KS', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeAS', 'rdry_AS', stream='ham',
+    cmor_var('ddrymodeAS', 'rdry_AS', stream='hamm',
              long_name='dry diameter of mode AS', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeCS', 'rdry_CS', stream='ham',
+    cmor_var('ddrymodeCS', 'rdry_CS', stream='hamm',
              long_name='dry diameter of mode CS', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeKI', 'rdry_KI', stream='ham',
+    cmor_var('ddrymodeKI', 'rdry_KI', stream='hamm',
              long_name='dry diameter of mode KI', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeAI', 'rdry_AI', stream='ham',
+    cmor_var('ddrymodeAI', 'rdry_AI', stream='hamm',
              long_name='dry diameter of mode AI', units=Unit('m'),  vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeCI', 'rdry_CI', stream='ham',
+    cmor_var('ddrymodeCI', 'rdry_CI', stream='hamm',
              long_name='dry diameter of mode CI', units=Unit('m'), vertical_coord_type='ModelLevel')
 
 ]
@@ -650,15 +693,18 @@ remsens_3hrly = [
 
 # ---------------- PDRMIP specific variables -------------------
 pdrmip_core = select_vars(core, ["evspsbl", "hfls", "hfss", "hurs", "hus", "huss", "ps", "psl", "sfcWind", 'tas', 'uas',
-                                 "vas"])
+                                 "vas", 'ts'])
 pdrmip_aer_rad = select_vars(aer_rad, ['od550aer', 'abs550aer'])
 pdrmip_rad = select_vars(rad, ["rlds", "rldscs", "rlus", "rlut", "rlutcs", "rsds", "rsutcs", "rsdt", "rsus", "rsut",
                                # "rsuscs", "rsdscs", IGNORE the up and down surface SW cs since we can't calculate it
                                "rsnscs"])  # Output the net instead
 pdrmip_cloud = select_vars(cloud, ["pr", "prc", "prsn", "prw", "cl", "cli", "clw", "clt", "ci"])
 pdrmip_aerosol = select_vars(aerosol, ["emibc", "emiso2", "emiso4", "loadbc", "loadso4", "concbc", "concso4"])
-pdrmip = pdrmip_daily + pdrmip_aerosol + pdrmip_cloud + pdrmip_stratified_fields + pdrmip_core + pdrmip_rad + \
-         pdrmip_aer_rad + double_rad
+pdrmip = pdrmip_aerosol + pdrmip_cloud + pdrmip_core + pdrmip_rad + \
+         pdrmip_aer_rad + double_rad + pdrmip_stratified_fields # + pdrmip_daily
+
+## REMOVE ME
+pdrmip = pdrmip_stratified_fields
 
 #  ------------ Aerocom CTRL (2D monthly) fields  -------------
 #  Variables-Parameter:Speciation
@@ -725,7 +771,7 @@ holuhraun_core = select_vars(core, [
     'ts',
     'layer_thick',
     # 'p',                     Can I just get this Iris cube??
-    'pho',
+    'rho',
     'hus',
     'hur'
 ])
@@ -746,42 +792,61 @@ holuhraun = holuhraun_cloud + holuhraun_aer_rad + holuhraun_core + holuhraun_aer
 
 
 trajectory_2d = select_vars(core, [
-    'orog',
+#    'orog',
     'landf',
     'area',
+])
 
+trajectory_2d = trajectory_2d + select_vars(core_inst, [
     'ps',
-    'zmla',
-    'u10',
-    'v10',
-    'tas',
-    'hfss',
+    'zmla', 
+
+# This aren't really instantaneous
+#    'uas',
+#    'vas',
+#    'tas',
+#    'hfss',
 ])
 
 trajectory_cloud = select_vars(cloud, ['prl', 'prc'])
 
-trajectory_3d = select_vars(core, [
-    'zgeo',
+#trajectory_strat = select_vars(pdrmip_stratified_fields, ['ta', 'ua', 'va', 'wap', 'hus', 'hur', 'zg'])
+
+trajectory_3d = select_vars(core_inst, [
+    'ua',
+    'va',
     'ta',
-    # 'ua',  # I'll have to run afterburner if I really need these (I suspect they're in the GRIB files though
-    # 'va',
+    'zgeo',
     'hus',
-    # 'omega',
+    'wap',
     'hur',
     'rho',
-    # 'plev',  # This will be in the other files anyway
+    ## 'plev',  # This will be in the other files anyway
+])
+
+trajectory_3d = trajectory_3d + select_vars(core, [
     'airmass',
     'zh',
     'layer_thick',
 ])
 
-trajectory_aer = select_vars(aerosol, ['conccnmodeNS', 'conccnmodeKS', 'conccnmodeAS', 'conccnmodeCS',
-                                       'conccnmodeKI', 'conccnmodeAI', 'conccnmodeCI',
-                                       'mmroa', 'mmrbc', 'mmrso4', 'mmrss', 'mmrdu',
-                                       'ddrymodeNS', 'ddrymodeKS', 'ddrymodeAS', 'ddrymodeCS',
-                                       'ddrymodeKI', 'ddrymodeAI', 'ddrymodeCI'])
+# I need to create instantaneous versions of these variables (or factor out the mean/inst flag)
+#trajectory_aer = select_vars(aerosol_inst, ['conccnmodeNS', 'conccnmodeKS', 'conccnmodeAS', 'conccnmodeCS',
+#                                            'conccnmodeKI', 'conccnmodeAI', 'conccnmodeCI',
+#                                            'mmroa', 'mmrbc', 'mmrso4', 'mmrss', 'mmrdu',
+#                                            'ddrymodeNS', 'ddrymodeKS', 'ddrymodeAS', 'ddrymodeCS',
+#                                           'ddrymodeKI', 'ddrymodeAI', 'ddrymodeCI'])
 
-trajectory = trajectory_2d + trajectory_cloud + trajectory_3d + trajectory_aer
+trajectory = trajectory_3d #+ trajectory_cloud + trajectory_2d + trajectory_aer + trajectory_strat
+
+
+def main(v, args):
+    print("Processing {}...".format(v.cmor_var_name))
+    c = v.load_var(args.infile, args.product)
+    print("Global (un-weighted) mean: {}".format(c.data.mean()))
+    v.write_var(c, args.time, args.outbase, args.daily, args.monthly, args.experiment, args.contact,
+                args.overwrite, args.pdrmip_format, args.output_monthly)
+    print("..done")
 
 
 if __name__ == '__main__':
@@ -797,6 +862,7 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument("--product", help="The CIS product to use")
     parser.add_argument("--pdrmip_format", help="Use the PDRMIP filename formatting style", action='store_true')
+    parser.add_argument("--output_monthly", help="Split the output into monthly files", action='store_true')
 
     # Parameter sets
     parser.add_argument('-c', '--core', action='append_const', const=core, dest='params')
@@ -826,10 +892,6 @@ if __name__ == '__main__':
     # Flatten the parameters and remove any duplicates
     variables = set(itertools.chain.from_iterable(args.params))
 
+    # TODO: Make this parallel...
     for v in variables:
-        print("Processing {}...".format(v.cmor_var_name))
-        c = v.load_var(args.infile, args.product)
-        print("Global (un-weighted) mean: {}".format(c.data.mean()))
-        v.write_var(c, args.time, args.outbase, args.daily, args.monthly, args.experiment, args.contact,
-                    args.overwrite, args.pdrmip_format)
-        print("..done")
+        main(v, args)
