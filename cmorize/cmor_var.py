@@ -46,6 +46,51 @@ def select_vars(cmor_vars, var_names):
     return [cmor_vars[cmor_var_names.index(v)] for v in var_names]
 
 
+def get_daily_cubes(c):
+    import iris.coord_categorisation
+    iris.coord_categorisation.add_day_of_month(c, 'time')
+    iris.coord_categorisation.add_month_number(c, 'time')
+    
+    # Create the aggregation group-by instance.
+    groupby = iris.analysis._Groupby([c.coord('day_of_month'), c.coord('month_number')])
+    dimension_to_groupby = c.coord_dims(c.coord('day_of_month'))[0]
+    cube_slice = [slice(None, None)] * len(c.shape)
+
+    for groupby_slice in groupby.group():
+    # for day in c.slices_over('day_of_month'):
+        # Put the groupby slice in the right place
+        cube_slice[dimension_to_groupby] = groupby_slice
+        day = c[tuple(cube_slice)]
+        yield day
+
+
+def get_monthly_cubes(c):
+    import iris.coord_categorisation
+    iris.coord_categorisation.add_year(c, 'time')
+    iris.coord_categorisation.add_month_number(c, 'time')
+
+    # Create the aggregation group-by instance.
+    groupby = iris.analysis._Groupby([c.coord('month_number'), c.coord('year')])
+    dimension_to_groupby = c.coord_dims(c.coord('month_number'))[0]
+    cube_slice = [slice(None, None)] * len(c.shape)
+
+    for groupby_slice in groupby.group():
+    # for day in c.slices_over('day_of_month'):
+        # Put the groupby slice in the right place
+        cube_slice[dimension_to_groupby] = groupby_slice
+        month = c[tuple(cube_slice)]
+        yield month
+
+def output_monthly_cubes(cube, filename_template='out_{}'):
+    for c in get_monthly_cubes(cube):
+        # Just take the first value since they're all the same day...
+        date = c.coord('time').units.num2date(c.coord('time').points[0])
+        date_fmt = date.strftime('%Y%m')
+        out = filename_template.format(date_fmt)
+        print("Saving to {}...".format(out))
+        iris.save(c, out)
+
+
 class cmor_var:
     def __init__(self, cmor_var_name, load, stream='', long_name=None, standard_name=None,
                  units=None, vertical_coord_type=None, scaling=1.0, comment=None, product=None):
@@ -91,7 +136,7 @@ class cmor_var:
         return cube
 
     def write_var(self, cube, time=None, outbase=None, daily=False, monthly=False, experiment_info=None,
-                  contact_info=None, overwrite=False, pdrmip_format=False):
+                  contact_info=None, overwrite=False, pdrmip_format=False, output_monthly=False):
         """
         Write the variable to a single file
         :param iris.cube.Cube cube: The data cube to be output
@@ -195,8 +240,14 @@ class cmor_var:
         print("time_period: %s" % time_period)
         print("time_coord: %s" % time_freq)
 
-        output_template = "{var}_{freq}_{model_exp}_{period}.nc" if pdrmip_format \
-            else "{model_exp}_{var}_{vert}_{period}_{freq}.nc"
+        if pdrmip_format:
+            output_template = "{var}_{freq}_{model_exp}_{period}.nc"
+        elif output_monthly:
+            # Create an extra set of curly braces for the specific month. but escape them for the first format call
+            output_template = "{model_exp}_{var}_{vert}_{{}}_{freq}.nc"
+        else:
+            output_template = "{model_exp}_{var}_{vert}_{period}_{freq}.nc"
+
         output_path, model_exp = os.path.split(outbase)
         outfile = os.path.join(output_path, output_template.format(model_exp=model_exp, var=self.cmor_var_name,
                                                                    vert=vert_coord, period=time_period,
@@ -206,4 +257,7 @@ class cmor_var:
         if os.path.isfile(outfile) and not overwrite:
             print("Skipping output as file already exists")
         else:
-            iris.save(cube, outfile)
+            if output_monthly:
+                output_monthly_cubes(cube, outfile.replace("{{}}", "{}"))
+            else:
+                iris.save(cube, outfile)
