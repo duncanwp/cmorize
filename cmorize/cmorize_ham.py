@@ -637,19 +637,19 @@ aerosol = [
     cmor_var('conccnmodeCI', partial(multiply_sum_by_air_density, variables='NUM_CI'), stream='tracerm',
              long_name='number concentration of mode CI', units=Unit('m-3'), vertical_coord_type='ModelLevel'),
 
-    cmor_var('ddrymodeNS', 'rdry_NS', stream='hamm',
+    cmor_var('ddrymodeNS', 'rdry_NS', stream='hamm', scaling=2.0, 
              long_name='dry diameter of mode NS', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeKS', 'rdry_KS', stream='hamm',
+    cmor_var('ddrymodeKS', 'rdry_KS', stream='hamm', scaling=2.0,
              long_name='dry diameter of mode KS', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeAS', 'rdry_AS', stream='hamm',
+    cmor_var('ddrymodeAS', 'rdry_AS', stream='hamm', scaling=2.0,
              long_name='dry diameter of mode AS', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeCS', 'rdry_CS', stream='hamm',
+    cmor_var('ddrymodeCS', 'rdry_CS', stream='hamm', scaling=2.0,
              long_name='dry diameter of mode CS', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeKI', 'rdry_KI', stream='hamm',
+    cmor_var('ddrymodeKI', 'rdry_KI', stream='hamm', scaling=2.0,
              long_name='dry diameter of mode KI', units=Unit('m'), vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeAI', 'rdry_AI', stream='hamm',
+    cmor_var('ddrymodeAI', 'rdry_AI', stream='hamm', scaling=2.0,
              long_name='dry diameter of mode AI', units=Unit('m'),  vertical_coord_type='ModelLevel'),
-    cmor_var('ddrymodeCI', 'rdry_CI', stream='hamm',
+    cmor_var('ddrymodeCI', 'rdry_CI', stream='hamm', scaling=2.0,
              long_name='dry diameter of mode CI', units=Unit('m'), vertical_coord_type='ModelLevel')
 
 ]
