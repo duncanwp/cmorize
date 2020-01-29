@@ -105,7 +105,9 @@ def calc_pbl_height(infile, product):
     # Move the height dim to the front
     altitude.transpose((1,0,2,3))
 
-    pbl_height = pbl.copy(data=np.asarray(pbl.data, dtype=int).choose(altitude.data))
+    # This mess just chooses teh right altitude values across the vertical dimension based on the pbl index data
+    # It essentially just does np.asarray(pbl.data, dtype=int).choose(altitude.data), but doesn't have the arbitraty 32 length index limit...
+    pbl_height = pbl.copy(data=altitude.data.reshape(altitude.shape[0], -1)[np.asarray(pbl.data, dtype=int).ravel(), range(np.product(pbl.shape))].reshape(pbl.shape))
     pbl_height.rename("boundary_layer_height")
     pbl_height.units = Unit('m')
     return pbl_height
