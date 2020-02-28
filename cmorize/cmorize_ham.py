@@ -46,9 +46,24 @@ def calc_ext550aer(infile, product):
     """
     from cis.data_io.gridded_data import make_from_cube
     from utils import get_stream_file
-    deltaz = cis.read_data(get_stream_file(infile, 'vphysc'), 'grheightm1', product)
+    deltaz = cis.read_data(get_stream_file(infile, 'vphyscm'), 'grheightm1', product)
     tau_3d = make_from_cube(sum(cis.read_data_list(infile, ['TAU_MODE_??_550nm'], product)))
-    ext_3d = tau_3d / deltaz
+    ext_3d = tau_3d / deltaz.data
+    return ext_3d
+
+
+def calc_abs550aer(infile, product):
+    """
+    I want units of m-1, Abs *should* be in units of 1 so I just need to divide by layer thickness
+    :param infile:
+    :param product:
+    :return:
+    """
+    from cis.data_io.gridded_data import make_from_cube
+    from utils import get_stream_file
+    deltaz = cis.read_data(get_stream_file(infile, 'vphyscm'), 'grheightm1', product)
+    abs_3d = make_from_cube(sum(cis.read_data_list(infile, ['ABS_MODE_??_550nm'], product)))
+    ext_3d = abs_3d / deltaz.data
     return ext_3d
 
 
@@ -130,8 +145,6 @@ core = [
 
     cmor_var('ps', 'aps', stream='echamm', long_name='Surface air pressure', standard_name='surface_air_pressure',
              units=Unit('Pa'), vertical_coord_type='Surface'),
-    cmor_var('psl', 'var151', stream='after', long_name='Sea Level Pressure', standard_name='air_pressure_at_sea_level',
-             units=Unit('Pa'), vertical_coord_type='Surface'),
     cmor_var('rho', 'rhoam1', stream='vphyscm', long_name='Air density', standard_name='air_density',
              units=Unit('kg m-3')),
     cmor_var('airmass', 'grmassm1', stream='vphyscm', standard_name='atmosphere_mass_of_air_per_unit_area',
@@ -146,10 +159,6 @@ core = [
     cmor_var('evspsbl', 'evap', stream='echam', long_name='Evaporation', standard_name='water_evaporation_flux',
              units=Unit('kg m-2 s-1'), vertical_coord_type='ModelLevel'),
     
-    cmor_var('wap', 'var135', stream='after', long_name='omega (=dp/dt)',
-             standard_name='lagrangian_tendency_of_air_pressure', units=Unit('Pa s-1'),
-             vertical_coord_type='ModelLevel'),
-
     # Scale so that it's upward
     cmor_var('hfls', 'ahfl', stream='echam', long_name='Surface Upward Latent Heat Flux',
              standard_name='surface_upward_latent_heat_flux', units=Unit('W m-2'), scaling=-1.0),
@@ -176,6 +185,15 @@ core = [
     cmor_var('vas', 'v10', stream='echamm', long_name='Northward Near-Surface Wind', standard_name='northward_wind',
              vertical_coord_type='Surface'),
 ]
+
+after = [
+
+    cmor_var('psl', 'var151', stream='after', long_name='Sea Level Pressure', standard_name='air_pressure_at_sea_level',
+             units=Unit('Pa'), vertical_coord_type='Surface'),
+    cmor_var('wap', 'var135', stream='after', long_name='omega (=dp/dt)',
+             standard_name='lagrangian_tendency_of_air_pressure', units=Unit('Pa s-1'),
+             vertical_coord_type='ModelLevel')
+    ]
 
 core_inst = [
     cmor_var('hus', 'q', stream='echam', long_name='specific humidity', standard_name='specific_humidity',
@@ -356,7 +374,9 @@ aer_rad = [
              vertical_coord_type='Column',
              comment='Ill-defined: model allows 4 modes of varying mixtures.'),
     cmor_var('ext550aer', calc_ext550aer, stream='radm', long_name='3D Aerosol Extinction @550nm',
-             units=Unit('m-1'), standard_name='volume_extinction_coefficient_in_air_due_to_ambient_aerosol_particles')
+             units=Unit('m-1'), standard_name='volume_extinction_coefficient_in_air_due_to_ambient_aerosol_particles'),
+    cmor_var('abs550aer3d', calc_abs550aer, stream='radm', long_name='3D Aerosol Absorption @550nm',
+             units=Unit('m-1'), standard_name='volume_absorption_coefficient_in_air_due_to_ambient_aerosol_particles')
 ]
 
 rad = [
@@ -474,7 +494,6 @@ double_rad = [
              long_name='net surface longwave radiation (no aerosol)', vertical_coord_type='Surface',
              scaling=-1.)
 ]
-
 
 aerosol = [
     cmor_var('emioa', 'emi_OC', stream='emi', long_name='total emission of POM',
@@ -694,8 +713,8 @@ remsens_3hrly = [
 ]
 
 # ---------------- PDRMIP specific variables -------------------
-pdrmip_core = select_vars(core, ["evspsbl", "hfls", "hfss", "hurs", "hus", "huss", "ps", "psl", "sfcWind", 'tas', 'uas',
-                                 "vas", 'ts'])
+pdrmip_core = select_vars(core, ["evspsbl", "hfls", "hfss", "hurs", "hus", "huss", "ps", "sfcWind", 'tas', 'uas',
+                                 "vas", 'ts']) + select_vars(after, ['psl'])
 pdrmip_aer_rad = select_vars(aer_rad, ['od550aer', 'abs550aer'])
 pdrmip_rad = select_vars(rad, ["rlds", "rldscs", "rlus", "rlut", "rlutcs", "rsds", "rsutcs", "rsdt", "rsus", "rsut",
                                # "rsuscs", "rsdscs", IGNORE the up and down surface SW cs since we can't calculate it
@@ -842,6 +861,10 @@ trajectory_3d = trajectory_3d + select_vars(core, [
 trajectory = trajectory_3d #+ trajectory_cloud + trajectory_2d + trajectory_aer + trajectory_strat
 
 
+
+aerocom_bb = select_vars(core, ['airmass', 'rho']) + rad + double_rad + select_vars(aer_rad, ['od550aer', 'ext550aer', 'abs550aer', 'abs550aer3d']) + select_vars(aerosol, ['mmroa', 'mmrbc', 'mmrdu', 'mmrss', 'mmrso4'])
+
+
 def main(v, args):
     print("Processing {}...".format(v.cmor_var_name))
     c = v.load_var(args.infile, args.product)
@@ -874,6 +897,8 @@ if __name__ == '__main__':
     parser.add_argument('--pdrmip', action='append_const', const=pdrmip, dest='params')
     parser.add_argument('--aerocom', action='append_const', const=aerocom_ctrl, dest='params',
                         help="Core AeroCom diagnostics")
+    parser.add_argument('--aerocom_bb', action='append_const', const=aerocom_bb, dest='params',
+                        help="AeroCom BB diagnostics")
     parser.add_argument('--holuhraun', action='append_const', const=holuhraun, dest='params',
                         help="AeroCom Holuhraun experiment diagnostics")
     parser.add_argument('--remsens', action='append_const', const=remsens_3hrly, dest='params',
