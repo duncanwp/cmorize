@@ -605,6 +605,9 @@ aerosol = [
              standard_name='mass_fraction_ of_dust_dry_aerosol_in_air', units=Unit('1'),
              vertical_coord_type='ModelLevel'),
 
+    cmor_var('ccn0120', 'CCN_0.120', stream='ham', long_name='CCN at 0.12% SS',
+             units=Unit('m-3'), vertical_coord_type='ModelLevel'),
+
     cmor_var('vmrso2', 'SO2', stream='tracerm', long_name='SO2', standard_name='mole_fraction_of_sulfur_dioxide_in_air',
              units=Unit('1'), vertical_coord_type='ModelLevel', scaling=(28.97 / 64.066)),
     cmor_var('vmrso4', 'H2SO4', stream='tracerm', long_name='SO4', standard_name='mole_fraction_of_sulfate_in_air',
@@ -864,6 +867,8 @@ trajectory = trajectory_3d #+ trajectory_cloud + trajectory_2d + trajectory_aer 
 
 aerocom_bb = select_vars(core, ['airmass', 'rho']) + rad + double_rad + select_vars(aer_rad, ['od550aer', 'ext550aer', 'abs550aer', 'abs550aer3d']) + select_vars(aerosol, ['mmroa', 'mmrbc', 'mmrdu', 'mmrss', 'mmrso4'])
 
+acpc_volcanos = trajectory_3d + cloud + rad + double_rad + select_vars(aer_rad, ['od550aer']) + select_vars(aerosol, ['mmrso2', 'mmrso4', 'ccn0120'])
+
 
 def main(v, args):
     print("Processing {}...".format(v.cmor_var_name))
@@ -885,7 +890,7 @@ if __name__ == '__main__':
     parser.add_argument("--institute", help="Institute details")
     parser.add_argument("-o", "--overwrite", help="Force overwrite of existing file (default False)",
                         action='store_true')
-    parser.add_argument("--product", help="The CIS product to use")
+    parser.add_argument("--product", default="ECHAM_HAM_63", help="The CIS product to use")
     parser.add_argument("--pdrmip_format", help="Use the PDRMIP filename formatting style", action='store_true')
     parser.add_argument("--output_monthly", help="Split the output into monthly files", action='store_true')
 
@@ -907,6 +912,7 @@ if __name__ == '__main__':
                                     help="Fixed PDRMIP diagnostics (due to hifreq output issue)")
     parser.add_argument('--all', action='append_const', const=all_vars, dest='params')
     parser.add_argument('--trajectory', action='append_const', const=trajectory, dest='params')
+    parser.add_argument('--acpc', action='append_const', const=acpc_volcanos, dest='params')
 
     freq_grp = parser.add_mutually_exclusive_group()
     freq_grp.add_argument("-m", "--monthly", action="store_true",
