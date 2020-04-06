@@ -127,27 +127,24 @@ class cmor_var:
         # Take the specific variable product over the general one if there is one
         product = self.product or product
         if callable(self.load):
-            cube = self.load(self.stream_file(), product=product)
+            cube = self.load(self.stream_file(infile), product=product)
         else:
-            cube = cis.read_data(self.stream_file(), self.load, product)
+            cube = cis.read_data(self.stream_file(infile), self.load, product)
         return cube
 
-    def stream_file(infile):
+    def stream_file(self, infile):
         from utils import filename_suffix
         return filename_suffix(infile, self.stream)
 
-    def write_var(self, cube, time=None, outbase=None, daily=False, monthly=False, experiment_info=None,
-                  contact_info=None, overwrite=False, pdrmip_format=False, output_monthly=False):
+    def write_var(self, cube, outfile, experiment_info=None, contact_info=None, overwrite=False,
+                        output_monthly=False):
         """
         Write the variable to a single file
         :param iris.cube.Cube cube: The data cube to be output
-        :param str time: The time period to use for variables that don't have a unique one
-        :param str outbase: The output filename base: aerocom3_<!ModelName>_<!ExperimentName>
-        :param bool daily: Assume daily output
-        :param bool monthly: Assume monthly output
+        :param str outfile: The output file to write to
         :param str experiment_info: e.g. "hindcast experiment (1980-2008); ACCMIP-MACCity emissions; nudged to ERAIA.";
         :param str contact_info: e.g. "Nick Schutgens (schutgens\@physics.ox.ac.uk)";
-        :param: bool pdrmip_format: Construct filename in the pdrmip way?
+        :param bool overwrite: Overwrite any existing file?
         """
         from iris.std_names import STD_NAMES
         import os
@@ -178,6 +175,27 @@ class cmor_var:
         if contact_info is not None:
             cube.attributes['info_contact'] = contact_info
 
+        if os.path.isfile(outfile) and not overwrite:
+            print("Skipping output as file already exists")
+        else:
+            if output_monthly:
+                output_monthly_cubes(cube, outfile.replace("{{}}", "{}"))
+            else:
+                iris.save(cube, outfile)
+
+    def get_output_file(self, cube=None, time=None, outbase=None, daily=False, monthly=False, three_hourly=False,
+                        pdrmip_format=False, output_monthly=False):
+        """
+        Write the variable to a single file
+        :param iris.cube.Cube cube: The data cube to be output
+        :param str time: The time period to use for variables that don't have a unique one
+        :param str outbase: The output filename base: aerocom3_<!ModelName>_<!ExperimentName>
+        :param bool daily: Assume daily output
+        :param bool monthly: Assume monthly output
+        :param bool three_hourly: Assume three_hourly output
+        :param bool pdrmip_format: Construct filename in the pdrmip way?
+        """
+        import os
         # Figure out the vertical coordinate type
         if self.vertical_coord_type is not None:
             vert_coord = self.vertical_coord_type
@@ -209,35 +227,43 @@ class cmor_var:
                         "Unknown vertical coordinate type (%s) for %s" % (vert_coord.name(), self.cmor_var_name))
             else:
                 raise ValueError("Multiple vertical coordinates (%s) for %s" % (
-                ", ".join(c.name() for c in vert_coord), self.cmor_var_name))
+                    ", ".join(c.name() for c in vert_coord), self.cmor_var_name))
             print("vert_coord guessed: %s" % vert_coord)
 
-        # Figure out the time period and frequency
-        # TODO This doesn't actually shift the time reference, but Nick's script converts to 1850-01-01,00:00:00
-        time_coord = cube.coords('time')
-        print("time_coord: %s " % (", ".join(c.name() for c in time_coord)))
-        if len(time_coord) == 1:
-            time_coord, = time_coord
-            time_period = np.unique([("%04d%02d%02d" % (d.year, d.month, d.day) if daily
-                                         else "%04d%02d" % (d.year, d.month) if monthly
-                                         else "%04d" % d.year)
-                                        for d in time_coord.units.num2date(time_coord.points)])
-            if len(time_period) == 0:
-                time_period = time if time is not None else "9999"
-            elif len(time_period) > 1:
-                if time is not None:
-                    time_period = time
-                else:
-                    raise ValueError("Multiple time periods (%s-%s) for %s" % (
-                    min(time_period), max(time_period), self.cmor_var_name))
-            else:
-                time_period, = time_period
-            time_freq = get_time_freq(time_coord, pdrmip_format)
-        elif len(time_coord) == 0:
-            time_period = time if time else "9999"
-            time_freq = 'fx' if pdrmip_format else 'timeinvariant'
+        if time and (daily or monthly or three_hourly):
+            time_period = time
+            if daily:
+                time_freq = 'day' if pdrmip_format else "daily"
+            if monthly:
+                time_freq = "Amon" if pdrmip_format else "monthly"
+            if three_hourly:
+                time_freq = '3hourly'
         else:
-            raise ValueError("Multiple time coordinates (%s) for %s" % (", ".join(time_coord), self.cmor_var_name))
+            # Figure out the time period and frequency
+            # TODO This doesn't actually shift the time reference, but Nick's script converts to 1850-01-01,00:00:00
+            time_coord = cube.coords('time')
+            print("time_coord: %s " % (", ".join(c.name() for c in time_coord)))
+            if len(time_coord) == 1:
+                time_coord, = time_coord
+                time_period = np.unique([("%04d%02d%02d" % (d.year, d.month, d.day) if daily
+                                          else "%04d%02d" % (d.year, d.month) if monthly else "%04d" % d.year)
+                                         for d in time_coord.units.num2date(time_coord.points)])
+                if len(time_period) == 0:
+                    time_period = time if time is not None else "9999"
+                elif len(time_period) > 1:
+                    if time is not None:
+                        time_period = time
+                    else:
+                        raise ValueError("Multiple time periods (%s-%s) for %s" % (
+                            min(time_period), max(time_period), self.cmor_var_name))
+                else:
+                    time_period, = time_period
+                time_freq = get_time_freq(time_coord, pdrmip_format)
+            elif len(time_coord) == 0:
+                time_period = time if time else "9999"
+                time_freq = 'fx' if pdrmip_format else 'timeinvariant'
+            else:
+                raise ValueError("Multiple time coordinates (%s) for %s" % (", ".join(time_coord), self.cmor_var_name))
         print("time_period: %s" % time_period)
         print("time_coord: %s" % time_freq)
 
@@ -253,12 +279,4 @@ class cmor_var:
         outfile = os.path.join(output_path, output_template.format(model_exp=model_exp, var=self.cmor_var_name,
                                                                    vert=vert_coord, period=time_period,
                                                                    freq=time_freq))
-        print("output filename: %s" % outfile)
-
-        if os.path.isfile(outfile) and not overwrite:
-            print("Skipping output as file already exists")
-        else:
-            if output_monthly:
-                output_monthly_cubes(cube, outfile.replace("{{}}", "{}"))
-            else:
-                iris.save(cube, outfile)
+        return outfile
