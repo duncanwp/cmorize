@@ -870,12 +870,22 @@ aerocom_bb = select_vars(core, ['airmass', 'rho']) + rad + double_rad + select_v
 acpc_volcanos = trajectory_3d + cloud + rad + double_rad + select_vars(aer_rad, ['od550aer']) + select_vars(aerosol, ['mmrso2', 'mmrso4', 'ccn0120'])
 
 
+def get_cdo_command(v, args):
+    outfile = v.get_output_file(None, args.time, args.outbase, args.daily, args.monthly, args.three_hourly,
+                                args.pdrmip_format, args.output_monthly)
+    print("cdo -chname,{v},{cf} -selvar,{v} -mergetime {fin} {fout}".format(v=v.var_name, cf=v.cmor_var_name,
+                                                                            fin=v.stream_file(args.infile),
+                                                                            fout=outfile))
+
+
 def main(v, args):
     print("Processing {}...".format(v.cmor_var_name))
     c = v.load_var(args.infile, args.product)
     print("Global (un-weighted) mean: {}".format(c.data.mean()))
-    v.write_var(c, args.time, args.outbase, args.daily, args.monthly, args.experiment, args.contact,
-                args.overwrite, args.pdrmip_format, args.output_monthly)
+    outfile = v.get_output_file(c, args.time, args.outbase, args.daily, args.monthly, args.three_hourly,
+                                args.pdrmip_format, args.output_monthly)
+    print("output filename: %s" % outfile)
+    v.write_var(c, outfile, args.experiment, args.contact, args.overwrite, args.output_monthly)
     print("..done")
 
 
@@ -891,6 +901,7 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--overwrite", help="Force overwrite of existing file (default False)",
                         action='store_true')
     parser.add_argument("--product", default="ECHAM_HAM_63", help="The CIS product to use")
+    parser.add_argument("--cdo", help="Just output relavent CDO commands and exit")
     parser.add_argument("--pdrmip_format", help="Use the PDRMIP filename formatting style", action='store_true')
     parser.add_argument("--output_monthly", help="Split the output into monthly files", action='store_true')
 
@@ -919,6 +930,8 @@ if __name__ == '__main__':
                           help="assume monthly output")
     freq_grp.add_argument("-d", "--daily", action="store_true",
                           help="assume daily output")
+    freq_grp.add_argument("-t", "--three_hourly", action="store_true",
+                          help="assume 3hrly output")
 
     args = parser.parse_args()
 
@@ -927,4 +940,7 @@ if __name__ == '__main__':
 
     # TODO: Make this parallel...
     for v in variables:
-        main(v, args)
+        if args.cdo:
+            get_cdo_command(v, args)
+        else:
+            main(v, args)

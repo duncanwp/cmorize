@@ -1,0 +1,39 @@
+HDF5-DIAG: Error detected in HDF5 (1.10.1) thread 140580498908928:
+  #000: H5F.c line 491 in H5Fcreate(): unable to create file
+    major: File accessibilty
+    minor: Unable to open file
+  #001: H5Fint.c line 1247 in H5F_open(): unable to open file: time = Sun Apr  5 21:25:28 2020
+, name = '/gws/nopw/j04/impala/users/dwatsonparris/dormant_plumes/Data/Data/ECHAM6.3-HAM2.2_dormant_plumes_rlut_TOA_2017_3hourly.nc', tent_flags = 13
+    major: File accessibilty
+    minor: Unable to open file
+  #002: H5FD.c line 809 in H5FD_open(): open failed
+    major: Virtual File Layer
+    minor: Unable to initialize object
+  #003: H5FDsec2.c line 346 in H5FD_sec2_open(): unable to open file: name = '/gws/nopw/j04/impala/users/dwatsonparris/dormant_plumes/Data/Data/ECHAM6.3-HAM2.2_dormant_plumes_rlut_TOA_2017_3hourly.nc', errno = 2, error message = 'No such file or directory', flags = 13, o_flags = 242
+    major: File accessibilty
+    minor: Unable to open file
+/home/users/dwatsonparris/miniconda3/envs/cis_env/lib/python3.6/site-packages/iris/__init__.py:237: IrisDeprecation: setting the 'Future' property 'netcdf_promote' is deprecated and will be removed in a future release. Please remove code that sets this property.
+  warn_deprecated(msg.format(name))
+Processing rlut...
+Global (un-weighted) mean: -223.82701110839844
+Process rlut: 'TOA Outgoing Longwave Radiation' / toa_outgoing_longwave_flux
+time_coord: time 
+time_period: 2017
+time_coord: 3hourly
+output filename: /gws/nopw/j04/impala/users/dwatsonparris/dormant_plumes/Data/Data/ECHAM6.3-HAM2.2_dormant_plumes_rlut_TOA_2017_3hourly.nc
+Traceback (most recent call last):
+  File "./cmorize_ham.py", line 930, in <module>
+    main(v, args)
+  File "./cmorize_ham.py", line 878, in main
+    args.overwrite, args.pdrmip_format, args.output_monthly)
+  File "/home/users/dwatsonparris/cmorize/cmorize/cmor_var.py", line 263, in write_var
+    iris.save(cube, outfile)
+  File "/home/users/dwatsonparris/miniconda3/envs/cis_env/lib/python3.6/site-packages/iris/io/__init__.py", line 407, in save
+    saver(source, target, **kwargs)
+  File "/home/users/dwatsonparris/miniconda3/envs/cis_env/lib/python3.6/site-packages/iris/fileformats/netcdf.py", line 2337, in save
+    with Saver(filename, netcdf_format) as sman:
+  File "/home/users/dwatsonparris/miniconda3/envs/cis_env/lib/python3.6/site-packages/iris/fileformats/netcdf.py", line 817, in __init__
+    format=netcdf_format)
+  File "netCDF4/_netCDF4.pyx", line 2111, in netCDF4._netCDF4.Dataset.__init__
+  File "netCDF4/_netCDF4.pyx", line 1731, in netCDF4._netCDF4._ensure_nc_success
+PermissionError: [Errno 13] Permission denied: b'/gws/nopw/j04/impala/users/dwatsonparris/dormant_plumes/Data/Data/ECHAM6.3-HAM2.2_dormant_plumes_rlut_TOA_2017_3hourly.nc'
