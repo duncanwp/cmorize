@@ -124,16 +124,17 @@ class cmor_var:
         self.cmor_var_name = cmor_var_name
 
     def load_var(self, infile, product=None):
-        from utils import filename_suffix
-        # Add the stream name
-        stream_file = filename_suffix(infile, self.stream)
         # Take the specific variable product over the general one if there is one
         product = self.product or product
         if callable(self.load):
-            cube = self.load(stream_file, product=product)
+            cube = self.load(self.stream_file(), product=product)
         else:
-            cube = cis.read_data(stream_file, self.load, product)
+            cube = cis.read_data(self.stream_file(), self.load, product)
         return cube
+
+    def stream_file(infile):
+        from utils import filename_suffix
+        return filename_suffix(infile, self.stream)
 
     def write_var(self, cube, time=None, outbase=None, daily=False, monthly=False, experiment_info=None,
                   contact_info=None, overwrite=False, pdrmip_format=False, output_monthly=False):
