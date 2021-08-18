@@ -141,17 +141,17 @@ core = [
     cmor_var('zgeo', 'geom1', stream='vphysc', long_name='Geopotential (units are actually m2 s-2...)', standard_name='geopotential',
              units=Unit('m3 s-2')),
     cmor_var('zh', 'geom1', stream='vphysc', long_name='Geopotential Height (units are actually m)', standard_name='geopotential_height',
-             units=Unit('m3 s-2'), scaling=1. / ACCELERATION_DUE_TO_GRAVITY),
+             units=Unit('m3 s-2'), scaling=1. / ACCELERATION_DUE_TO_GRAVITY, vertical_coord_type='ModelLevel'),
 
     cmor_var('ps', 'aps', stream='echamm', long_name='Surface air pressure', standard_name='surface_air_pressure',
              units=Unit('Pa'), vertical_coord_type='Surface'),
     cmor_var('rho', 'rhoam1', stream='vphyscm', long_name='Air density', standard_name='air_density',
              units=Unit('kg m-3')),
     cmor_var('airmass', 'grmassm1', stream='vphyscm', standard_name='atmosphere_mass_of_air_per_unit_area',
-             units=Unit('kg')),
+             units=Unit('kg'), vertical_coord_type='ModelLevel'),
 
     cmor_var('ts', 'tslm1', stream='echamm', long_name='surface temperature of land',
-             standard_name='surface_temperature', units=Unit('K')),
+             standard_name='surface_temperature', units=Unit('K'), vertical_coord_type='Surface'),
 
     cmor_var('hus', 'q', stream='echamm', long_name='specific humidity', standard_name='specific_humidity',
              units=Unit('1'), vertical_coord_type='ModelLevel'),
@@ -161,10 +161,12 @@ core = [
     
     # Scale so that it's upward
     cmor_var('hfls', 'ahfl', stream='echam', long_name='Surface Upward Latent Heat Flux',
-             standard_name='surface_upward_latent_heat_flux', units=Unit('W m-2'), scaling=-1.0),
+             standard_name='surface_upward_latent_heat_flux', units=Unit('W m-2'), scaling=-1.0,
+             vertical_coord_type='Surface'),
     # Scale so that it's upward
     cmor_var('hfss', 'ahfs', stream='echam', long_name='Surface Upward Sensible Heat Flux',
-             standard_name='surface_upward_sensible_heat_flux', units=Unit('W m-2'), scaling=-1.0),
+             standard_name='surface_upward_sensible_heat_flux', units=Unit('W m-2'), scaling=-1.0,
+             vertical_coord_type='Surface'),
 
     cmor_var('hur', 'relhum', stream='echamm',
              long_name='Relative Humidity', standard_name='relative_humidity',
@@ -210,22 +212,23 @@ core_inst = [
              units=Unit('m'), vertical_coord_type='Surface'),
         
     cmor_var('ta', 'st', stream='after', long_name='Air Temperature',
-             standard_name='air_temperature', units=Unit('K')),
+             standard_name='air_temperature', units=Unit('K'), vertical_coord_type='ModelLevel'),
     cmor_var('wap', 'var135', stream='after', long_name='omega (=dp/dt)',
-             standard_name='lagrangian_tendency_of_air_pressure', units=Unit('Pa s-1')),
+             standard_name='lagrangian_tendency_of_air_pressure', units=Unit('Pa s-1'),
+             vertical_coord_type='ModelLevel'),
     cmor_var('ps', 'aps', stream='echam', long_name='Surface air pressure', standard_name='surface_air_pressure',
              units=Unit('Pa'), vertical_coord_type='Surface'),
     cmor_var('rho', 'rhoam1', stream='vphysc', long_name='Air density', standard_name='air_density',
-             units=Unit('kg m-3')),
+             units=Unit('kg m-3'), vertical_coord_type='ModelLevel'),
 
     cmor_var('zg', 'var156', stream='after', long_name='Geopotential Height', standard_name='geopotential_height',
              units=Unit('m')),
     cmor_var('ua', 'var131', stream='after', long_name='Eastward Wind', standard_name='eastward_wind',
-             units=Unit('m s-1')),
+             units=Unit('m s-1'), vertical_coord_type='ModelLevel'),
     cmor_var('va', 'var132', stream='after', long_name='Northward Wind', standard_name='northward_wind',
-             units=Unit('m s-1')),
+             units=Unit('m s-1'), vertical_coord_type='ModelLevel'),
     cmor_var('zgeo', 'geom1', stream='vphysc', long_name='Geopotential (units are actually m2 s-2...)', standard_name='geopotential',
-             units=Unit('m3 s-2')),
+             units=Unit('m3 s-2'), vertical_coord_type='ModelLevel'),
 ]
 
 # This uses the netCDF_Gridded product since the vertical coordinates are straight pressure levels
@@ -254,8 +257,9 @@ forcing = [
 ]
 
 cloud = [
-    cmor_var('ci', 'CONV_TIME', stream='conv', long_name='Fraction of Time Convection Occurs', units=Unit('1'),
-             standard_name='convection_time_fraction', vertical_coord_type='ModelLevel'),
+#FIXME
+#    cmor_var('ci', 'CONV_TIME', stream='conv', long_name='Fraction of Time Convection Occurs', units=Unit('1'),
+#             standard_name='convection_time_fraction', vertical_coord_type='ModelLevel'),
     cmor_var('pr', partial(sum_variables, variables=["aprl", "aprc"]), stream='echam',
              long_name='Precipitation',
              standard_name='precipitation_flux', units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
@@ -620,7 +624,7 @@ aerosol = [
              standard_name='tendency_of_atmosphere_mass_content_of_sulfate_dry_aerosol_due_to_net_chemical_production_and_emission',
              units=Unit('kg m-2 s-1'), vertical_coord_type='ModelLevel'),
 
-    cmor_var('concbc', partial(multiply_sum_by_air_density, variables='BC_??'), stream='tracerm',
+    cmor_var('concbc', partial(multiply_sum_by_air_density, variables='BC_??'), stream='tracerm', 
              long_name='Concentration of Black Carbon Aerosol', units=Unit('kg m-3'), vertical_coord_type='ModelLevel'),
     cmor_var('concso4', partial(multiply_sum_by_air_density, variables='SO4_??'), stream='tracerm',
              long_name='Concentration of SO4', units=Unit('kg m-3'), vertical_coord_type='ModelLevel'),
@@ -722,13 +726,17 @@ pdrmip_aer_rad = select_vars(aer_rad, ['od550aer', 'abs550aer'])
 pdrmip_rad = select_vars(rad, ["rlds", "rldscs", "rlus", "rlut", "rlutcs", "rsds", "rsutcs", "rsdt", "rsus", "rsut",
                                # "rsuscs", "rsdscs", IGNORE the up and down surface SW cs since we can't calculate it
                                "rsnscs"])  # Output the net instead
-pdrmip_cloud = select_vars(cloud, ["pr", "prc", "prsn", "prw", "cl", "cli", "clw", "clt", "ci"])
+#FIXME
+pdrmip_cloud = select_vars(cloud, ["pr", "prc", "prsn", "prw", "cl", "cli", "clw", "clt"])
 pdrmip_aerosol = select_vars(aerosol, ["emibc", "emiso2", "emiso4", "loadbc", "loadso4", "concbc", "concso4"])
 pdrmip = pdrmip_aerosol + pdrmip_cloud + pdrmip_core + pdrmip_rad + \
          pdrmip_aer_rad + double_rad + pdrmip_stratified_fields # + pdrmip_daily
+pdrmip = select_vars(rad, ["rlutcs", 'rlut', "rsutcs", "rsdt", "rsut"])
 
 ## REMOVE ME
-pdrmip = pdrmip_stratified_fields
+#pdrmip = select_vars(core, ["evspsbl", "hfls", "hfss", "tas"]) + pdrmip_rad
+#pdrmip = select_vars(core, ["tas"]) 
+#pdrmip = select_vars(cloud, ["clw"]) + select_vars(aerosol, ["concbc"])
 
 #  ------------ Aerocom CTRL (2D monthly) fields  -------------
 #  Variables-Parameter:Speciation
@@ -797,7 +805,8 @@ holuhraun_core = select_vars(core, [
     # 'p',                     Can I just get this Iris cube??
     'rho',
     'hus',
-    'hur'
+    'hur',
+    'airmass'
 ])
 
 holuhraun_aer = select_vars(aerosol, [
@@ -844,9 +853,12 @@ trajectory_3d = select_vars(core_inst, [
     'hus',
     'wap',
     'hur',
-    'rho',
+#    'rho',
     ## 'plev',  # This will be in the other files anyway
 ])
+
+acpc_volcanos = trajectory_3d + cloud + rad + double_rad + select_vars(aerosol, ['ccn0120', 'mmrso2', 'mmrso4']) #+ select_vars(aer_rad, ['od550aer'])
+acpc_volcanos = pdrmip_stratified_fields
 
 trajectory_3d = trajectory_3d + select_vars(core, [
     'airmass',
@@ -867,25 +879,48 @@ trajectory = trajectory_3d #+ trajectory_cloud + trajectory_2d + trajectory_aer 
 
 aerocom_bb = select_vars(core, ['airmass', 'rho']) + rad + double_rad + select_vars(aer_rad, ['od550aer', 'ext550aer', 'abs550aer', 'abs550aer3d']) + select_vars(aerosol, ['mmroa', 'mmrbc', 'mmrdu', 'mmrss', 'mmrso4'])
 
-acpc_volcanos = trajectory_3d + cloud + rad + double_rad + select_vars(aer_rad, ['od550aer']) + select_vars(aerosol, ['mmrso2', 'mmrso4', 'ccn0120'])
-
 
 def get_cdo_command(v, args):
+    #print("Processing {}...".format(v.cmor_var_name))
     outfile = v.get_output_file(None, args.time, args.outbase, args.daily, args.monthly, args.three_hourly,
                                 args.pdrmip_format, args.output_monthly)
-    print("cdo -chname,{v},{cf} -selvar,{v} -mergetime {fin} {fout}".format(v=v.var_name, cf=v.cmor_var_name,
-                                                                            fin=v.stream_file(args.infile),
-                                                                            fout=outfile))
+
+    if callable(v.load):
+        print("{} not directly loaded - unable to calculate. Skipping".format(v.cmor_var_name))
+    else:
+        print("cdo -mulc,{s} -chname,{v},{cf} -selvar,{v} -mergetime {fin} {fout}".format(v=v.load, cf=v.cmor_var_name,
+                                                                                fin=v.stream_file(args.infile),
+                                                                                fout=outfile, s=v.scaling))
 
 
 def main(v, args):
+    import os
     print("Processing {}...".format(v.cmor_var_name))
-    c = v.load_var(args.infile, args.product)
-    print("Global (un-weighted) mean: {}".format(c.data.mean()))
-    outfile = v.get_output_file(c, args.time, args.outbase, args.daily, args.monthly, args.three_hourly,
-                                args.pdrmip_format, args.output_monthly)
-    print("output filename: %s" % outfile)
-    v.write_var(c, outfile, args.experiment, args.contact, args.overwrite, args.output_monthly)
+
+    filename_args = [args.time, args.outbase, args.daily, args.monthly, args.three_hourly,
+                                            args.pdrmip_format, args.output_monthly]
+
+    # This is a horribly complicated way of trying to get the output filename without reading the cube...
+    def process_file(outfile, overwrite):
+        print("Output filename: %s" % outfile)
+        if os.path.isfile(outfile) and not overwrite:
+            print("Skipping output as file already exists")
+            return False
+        return True
+
+    try:
+        outfile = v.get_output_file(None, *filename_args)
+    except Exception as e:
+        c = v.load_var(args.infile, args.product)
+        outfile = v.get_output_file(c, *filename_args)
+        if not process_file(outfile, args.overwrite):
+            return
+    else:
+        if process_file(outfile, args.overwrite):
+            c = v.load_var(args.infile, args.product)
+        else:
+            return
+    v.write_var(c, outfile, args.experiment, args.contact, args.output_monthly)
     print("..done")
 
 
@@ -901,7 +936,7 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--overwrite", help="Force overwrite of existing file (default False)",
                         action='store_true')
     parser.add_argument("--product", default="ECHAM_HAM_63", help="The CIS product to use")
-    parser.add_argument("--cdo", help="Just output relavent CDO commands and exit")
+    parser.add_argument("--cdo", help="Just output relavent CDO commands and exit", action='store_true')
     parser.add_argument("--pdrmip_format", help="Use the PDRMIP filename formatting style", action='store_true')
     parser.add_argument("--output_monthly", help="Split the output into monthly files", action='store_true')
 
@@ -930,7 +965,7 @@ if __name__ == '__main__':
                           help="assume monthly output")
     freq_grp.add_argument("-d", "--daily", action="store_true",
                           help="assume daily output")
-    freq_grp.add_argument("-t", "--three_hourly", action="store_true",
+    freq_grp.add_argument("--three_hourly", action="store_true",
                           help="assume 3hrly output")
 
     args = parser.parse_args()

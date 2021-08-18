@@ -136,7 +136,7 @@ class cmor_var:
         from utils import filename_suffix
         return filename_suffix(infile, self.stream)
 
-    def write_var(self, cube, outfile, experiment_info=None, contact_info=None, overwrite=False,
+    def write_var(self, cube, outfile, experiment_info=None, contact_info=None,
                         output_monthly=False):
         """
         Write the variable to a single file
@@ -144,17 +144,16 @@ class cmor_var:
         :param str outfile: The output file to write to
         :param str experiment_info: e.g. "hindcast experiment (1980-2008); ACCMIP-MACCity emissions; nudged to ERAIA.";
         :param str contact_info: e.g. "Nick Schutgens (schutgens\@physics.ox.ac.uk)";
-        :param bool overwrite: Overwrite any existing file?
         """
         from iris.std_names import STD_NAMES
-        import os
+        from cf_units import Unit
 
         print("Process %s: '%s' / %s" % (self.cmor_var_name, self.long_name, self.standard_name))
 
         # Do scaling and conversions
         cube *= self.scaling
         if self.units is not None:
-            if cube.units is not None and cube.units != '1':
+            if isinstance(cube.units, Unit) and (not cube.units.is_unknown()) and (cube.units != '1'):
                 cube.convert_units(self.units)
             else:
                 print("WARNING: Setting units to '{}'without conversion".format(self.units))
@@ -175,13 +174,10 @@ class cmor_var:
         if contact_info is not None:
             cube.attributes['info_contact'] = contact_info
 
-        if os.path.isfile(outfile) and not overwrite:
-            print("Skipping output as file already exists")
+        if output_monthly:
+            output_monthly_cubes(cube, outfile.replace("{{}}", "{}"))
         else:
-            if output_monthly:
-                output_monthly_cubes(cube, outfile.replace("{{}}", "{}"))
-            else:
-                iris.save(cube, outfile)
+            iris.save(cube, outfile)
 
     def get_output_file(self, cube=None, time=None, outbase=None, daily=False, monthly=False, three_hourly=False,
                         pdrmip_format=False, output_monthly=False):
@@ -195,7 +191,7 @@ class cmor_var:
         :param bool three_hourly: Assume three_hourly output
         :param bool pdrmip_format: Construct filename in the pdrmip way?
         """
-        import os
+        import os.path
         # Figure out the vertical coordinate type
         if self.vertical_coord_type is not None:
             vert_coord = self.vertical_coord_type
@@ -264,8 +260,8 @@ class cmor_var:
                 time_freq = 'fx' if pdrmip_format else 'timeinvariant'
             else:
                 raise ValueError("Multiple time coordinates (%s) for %s" % (", ".join(time_coord), self.cmor_var_name))
-        print("time_period: %s" % time_period)
-        print("time_coord: %s" % time_freq)
+        #print("time_period: %s" % time_period)
+        #print("time_coord: %s" % time_freq)
 
         if pdrmip_format:
             output_template = "{var}_{freq}_{model_exp}_{period}.nc"
