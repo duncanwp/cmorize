@@ -105,6 +105,22 @@ def multiply_sum_by_air_density(infile, variables, product):
     return res
 
 
+def optionally_sum_modes(infile, variable, product, suffix="_??"):
+    """
+    Try reading a total variable otherwise try reading per-mode variables and summing
+    :param infile:
+    :param variables:
+    :param product:
+    :param suffix: The suffix to wildcard for the individual mode variables
+    :return:
+    """
+    try:
+        res = cis.read_data(infile, variable, product)
+    except:
+        res = sum(cis.read_data_list(infile, [variable+suffix], product))
+    return res
+
+
 def calc_pbl_height(infile, product):
     """
     I want units of m-1, Tau *should* be in units of 1 so I just need to divide by layer thickness
@@ -526,24 +542,24 @@ aerosol = [
              standard_name='tendency_of_atmosphere_mass_content_of_particulate_organic_matter_dry_aerosol_due_to_emission',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
 
-    cmor_var('wetoa', partial(sum_variables, variables='wdep_OC_??'), stream='wetdep', long_name='wet deposition of POM',
+    cmor_var('wetoa', partial(optionally_sum_modes, variables='wdep_OC'), stream='wetdep', long_name='wet deposition of POM',
              standard_name='tendency_of_atmosphere_mass_content_of_particulate_organic_matter_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('wetbc', partial(sum_variables, variables='wdep_BC_??'), stream='wetdep', long_name='wet deposition of BC',
+    cmor_var('wetbc', partial(optionally_sum_modes, variables='wdep_BC'), stream='wetdep', long_name='wet deposition of BC',
              standard_name='tendency_of_atmosphere_mass_content_of_black_carbon_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('wetso4', partial(sum_variables, variables='wdep_SO4_??'), stream='wetdep',
+    cmor_var('wetso4', partial(optionally_sum_modes, variables='wdep_SO4'), stream='wetdep',
              long_name='wet deposition of SO4',
              standard_name='tendency_of_atmosphere_mass_content_of_sulfate_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
     cmor_var('wetso2', 'wdep_SO2', stream='wetdep', long_name='wet deposition of SO2',
              standard_name='tendency_of_atmosphere_mass_content_of_sulfur_dioxide_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('wetss', partial(sum_variables, variables='wdep_SS_??'), stream='wetdep',
+    cmor_var('wetss', partial(optionally_sum_modes, variables='wdep_SS'), stream='wetdep',
              long_name='wet deposition of seasalt',
              standard_name='tendency_of_atmosphere_mass_content_of_seasalt_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('wetdust', partial(sum_variables, variables='wdep_DU_??'), stream='wetdep',
+    cmor_var('wetdust', partial(optionally_sum_modes, variables='wdep_DU'), stream='wetdep',
              long_name='wet deposition of dust',
              standard_name='tendency_of_atmosphere_mass_content_of_dust_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
@@ -567,23 +583,23 @@ aerosol = [
     cmor_var('dryso2', 'ddep_SO2', stream='drydep', long_name='dry deposition of SO2',
              standard_name='tendency_of_atmosphere_mass_content_of_sulfur_dioxide_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('dryso4', partial(sum_variables, variables='ddep_SO4_??'), stream='drydep',
+    cmor_var('dryso4', partial(optionally_sum_modes, variables='ddep_SO4'), stream='drydep',
              long_name='dry deposition of SO4',
              standard_name='tendency_of_atmosphere_mass_content_of_sulfate_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('dryss', partial(sum_variables, variables='ddep_SS_??'), stream='drydep',
+    cmor_var('dryss', partial(optionally_sum_modes, variables='ddep_SS'), stream='drydep',
              long_name='dry deposition of seasalt',
              standard_name='tendency_of_atmosphere_mass_content_of_seasalt_dry_aerosol_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('drydust', partial(sum_variables, variables='ddep_DU_??'), stream='drydep',
+    cmor_var('drydust', partial(optionally_sum_modes, variables='ddep_DU'), stream='drydep',
              long_name='dry deposition of dust',
              standard_name='tendency_of_atmosphere_mass_content_of_dust_dry_aerosol_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('dryoa', partial(sum_variables, variables='ddep_OC_??'), stream='drydep',
+    cmor_var('dryoa', partial(optionally_sum_modes, variables='ddep_OC'), stream='drydep',
              long_name='dry deposition of POM',
              standard_name='tendency_of_atmosphere_mass_content_of_particulate_organic_matter_dry_aerosol_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('drybc', partial(sum_variables, variables='ddep_BC_??'), stream='drydep', long_name='dry deposition of BC',
+    cmor_var('drybc', partial(optionally_sum_modes, variables='ddep_BC'), stream='drydep', long_name='dry deposition of BC',
              standard_name='tendency_of_atmosphere_mass_content_of_black_carbon_dry_aerosol_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
 
@@ -788,7 +804,9 @@ holuhraun_cloud = select_vars(cloud, [
     'prc',  # (rain_conv)
     'prl',  # (rain_ls)
     'cl',
-    'clw'
+    'clw',
+    'cli',
+
 ])
 
 holuhraun_aer_rad = select_vars(aer_rad, [
@@ -807,15 +825,31 @@ holuhraun_core = select_vars(core, [
     'hus',
     'hur',
     'airmass'
-])
+]) + select_vars(core_inst, ['ta'])
 
 holuhraun_aer = select_vars(aerosol, [
-    # 'emiso2',  # I don't have emiso2_srf or emiso2_high. This is actually accumulated emissions too...
+    'emiso2',  # I don't have emiso2_srf or emiso2_high. This is actually accumulated emissions too...
+    'dryso2',
+    'dryso4',
     'wetso2',
-    # 'wetso4',                This isn't per mode in the holuhraun output...
+    'wetso4',
     'cheaqpso4',
     'mmrso2',
     'mmrso4',
+    'conccnmodeNS',
+    'conccnmodeKS',
+    'conccnmodeAS',
+    'conccnmodeCS',
+    'conccnmodeKI',
+    'conccnmodeAI',
+    'conccnmodeCI',
+    'ddrymodeNS',
+    'ddrymodeKS',
+    'ddrymodeAS',
+    'ddrymodeCS',
+    'ddrymodeKI',
+    'ddrymodeAI',
+    'ddrymodeCI',
 
 ])
 
