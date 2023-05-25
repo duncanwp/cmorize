@@ -1,0 +1,16 @@
+#!/bin/bash
+#SBATCH --job-name cmorize
+#SBATCH -n 1 
+#SBATCH -t 8:00:00
+#SBATCH -p par-single
+#SBATCH -o %J.o
+#SBATCH -e %J.e
+#SBATCH --mem=64000
+
+#source activate cis_env
+
+/home/users/dwatsonparris/miniconda3/envs/cis_env/bin/python cmorize_ham.py '/gws/nopw/j04/eo_shared_data_vol2/scratch/dwatsonparris/pdrmip-bcx10short_fsst/Raw/pdrmip-bcx10short_fsst_2*_.nc' /gws/nopw/j04/eo_shared_data_vol2/scratch/dwatsonparris/pdrmip-bcx10short_fsst/Data/ECHAM6.3-HAM2.2_bcx10short_fsst --experiment "BCx10 simulations with fixed SST (fSST) run using ECHAM6.3-HAM2.2 with short BC lifetime" --contact "Duncan Watson-Parris: duncan.watson-parris@physics.ox.ac.uk" --institute "University of Oxford" --time '200101-203101' --pdrmip --pdrmip_format
+
+#/home/users/dwatsonparris/miniconda3/envs/cis_env/bin/python cmorize_ham.py '/gws/nopw/j04/eo_shared_data_vol2/scratch/dwatsonparris/pdrmip-bcx1short_coupled/Raw/pdrmip-bcx1short_coupled_2*_.nc' /gws/nopw/j04/eo_shared_data_vol2/scratch/dwatsonparris/pdrmip-bcx1short_coupled/Data/ECHAM6.3-HAM2.2_bcx1short_coupled --experiment "Baseline slab-ocean (MLO) run using ECHAM6.3-HAM2.2 with short BC lifetime" --contact "Duncan Watson-Parris: duncan.watson-parris@physics.ox.ac.uk" --institute "University of Oxford" --time '200001-210001' --pdrmip --pdrmip_format
+#/home/users/dwatsonparris/miniconda3/envs/cis_env/bin/python cmorize_ham.py '/gws/nopw/j04/impala/users/dwatsonparris/short_pdrmip-bcslt_coupled/Raw/short_pdrmip-bcslt_coupled_2*_.nc' /gws/nopw/j04/impala/users/dwatsonparris/short_pdrmip-bcslt_coupled/Data/ECHAM6.3-HAM2.2_base_coupled --experiment "BCx10 reduced lifetime slab-ocean (MLO) run using ECHAM6.3-HAM2.2 (rerun to eliminate spin-up differences)" --contact "Duncan Watson-Parris: duncan.watson-parris@physics.ox.ac.uk" --institute "University of Oxford" --time '200001-211001' --pdrmip --pdrmip_format
+

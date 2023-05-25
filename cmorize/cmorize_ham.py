@@ -542,24 +542,24 @@ aerosol = [
              standard_name='tendency_of_atmosphere_mass_content_of_particulate_organic_matter_dry_aerosol_due_to_emission',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
 
-    cmor_var('wetoa', partial(optionally_sum_modes, variables='wdep_OC'), stream='wetdep', long_name='wet deposition of POM',
+    cmor_var('wetoa', partial(optionally_sum_modes, variable='wdep_OC'), stream='wetdep', long_name='wet deposition of POM',
              standard_name='tendency_of_atmosphere_mass_content_of_particulate_organic_matter_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('wetbc', partial(optionally_sum_modes, variables='wdep_BC'), stream='wetdep', long_name='wet deposition of BC',
+    cmor_var('wetbc', partial(optionally_sum_modes, variable='wdep_BC'), stream='wetdep', long_name='wet deposition of BC',
              standard_name='tendency_of_atmosphere_mass_content_of_black_carbon_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('wetso4', partial(optionally_sum_modes, variables='wdep_SO4'), stream='wetdep',
+    cmor_var('wetso4', partial(optionally_sum_modes, variable='wdep_SO4'), stream='wetdep',
              long_name='wet deposition of SO4',
              standard_name='tendency_of_atmosphere_mass_content_of_sulfate_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
     cmor_var('wetso2', 'wdep_SO2', stream='wetdep', long_name='wet deposition of SO2',
              standard_name='tendency_of_atmosphere_mass_content_of_sulfur_dioxide_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('wetss', partial(optionally_sum_modes, variables='wdep_SS'), stream='wetdep',
+    cmor_var('wetss', partial(optionally_sum_modes, variable='wdep_SS'), stream='wetdep',
              long_name='wet deposition of seasalt',
              standard_name='tendency_of_atmosphere_mass_content_of_seasalt_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('wetdust', partial(optionally_sum_modes, variables='wdep_DU'), stream='wetdep',
+    cmor_var('wetdust', partial(optionally_sum_modes, variable='wdep_DU'), stream='wetdep',
              long_name='wet deposition of dust',
              standard_name='tendency_of_atmosphere_mass_content_of_dust_dry_aerosol_due_to_wet_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
@@ -583,23 +583,23 @@ aerosol = [
     cmor_var('dryso2', 'ddep_SO2', stream='drydep', long_name='dry deposition of SO2',
              standard_name='tendency_of_atmosphere_mass_content_of_sulfur_dioxide_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('dryso4', partial(optionally_sum_modes, variables='ddep_SO4'), stream='drydep',
+    cmor_var('dryso4', partial(optionally_sum_modes, variable='ddep_SO4'), stream='drydep',
              long_name='dry deposition of SO4',
              standard_name='tendency_of_atmosphere_mass_content_of_sulfate_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('dryss', partial(optionally_sum_modes, variables='ddep_SS'), stream='drydep',
+    cmor_var('dryss', partial(optionally_sum_modes, variable='ddep_SS'), stream='drydep',
              long_name='dry deposition of seasalt',
              standard_name='tendency_of_atmosphere_mass_content_of_seasalt_dry_aerosol_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('drydust', partial(optionally_sum_modes, variables='ddep_DU'), stream='drydep',
+    cmor_var('drydust', partial(optionally_sum_modes, variable='ddep_DU'), stream='drydep',
              long_name='dry deposition of dust',
              standard_name='tendency_of_atmosphere_mass_content_of_dust_dry_aerosol_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('dryoa', partial(optionally_sum_modes, variables='ddep_OC'), stream='drydep',
+    cmor_var('dryoa', partial(optionally_sum_modes, variable='ddep_OC'), stream='drydep',
              long_name='dry deposition of POM',
              standard_name='tendency_of_atmosphere_mass_content_of_particulate_organic_matter_dry_aerosol_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
-    cmor_var('drybc', partial(optionally_sum_modes, variables='ddep_BC'), stream='drydep', long_name='dry deposition of BC',
+    cmor_var('drybc', partial(optionally_sum_modes, variable='ddep_BC'), stream='drydep', long_name='dry deposition of BC',
              standard_name='tendency_of_atmosphere_mass_content_of_black_carbon_dry_aerosol_due_to_dry_deposition',
              units=Unit('kg m-2 s-1'), vertical_coord_type='Surface'),
 
@@ -750,7 +750,7 @@ pdrmip = pdrmip_aerosol + pdrmip_cloud + pdrmip_core + pdrmip_rad + \
 pdrmip = select_vars(rad, ["rlutcs", 'rlut', "rsutcs", "rsdt", "rsut"])
 
 ## REMOVE ME
-#pdrmip = select_vars(core, ["evspsbl", "hfls", "hfss", "tas"]) + pdrmip_rad
+pdrmip = select_vars(core, ["evspsbl", "hfls", "hfss", "tas"]) + pdrmip_rad + select_vars(cloud, ["pr"])
 #pdrmip = select_vars(core, ["tas"]) 
 #pdrmip = select_vars(cloud, ["clw"]) + select_vars(aerosol, ["concbc"])
 
@@ -828,14 +828,14 @@ holuhraun_core = select_vars(core, [
 ]) + select_vars(core_inst, ['ta'])
 
 holuhraun_aer = select_vars(aerosol, [
-    'emiso2',  # I don't have emiso2_srf or emiso2_high. This is actually accumulated emissions too...
-    'dryso2',
-    'dryso4',
-    'wetso2',
-    'wetso4',
-    'cheaqpso4',
-    'mmrso2',
-    'mmrso4',
+#    'emiso2',  # I don't have emiso2_srf or emiso2_high. This is actually accumulated emissions too...
+#    'dryso2',
+#    'dryso4',
+#    'wetso2',
+#    'wetso4',
+#    'cheaqpso4',
+#    'mmrso2',
+#    'mmrso4',
     'conccnmodeNS',
     'conccnmodeKS',
     'conccnmodeAS',
@@ -843,17 +843,17 @@ holuhraun_aer = select_vars(aerosol, [
     'conccnmodeKI',
     'conccnmodeAI',
     'conccnmodeCI',
-    'ddrymodeNS',
-    'ddrymodeKS',
-    'ddrymodeAS',
-    'ddrymodeCS',
-    'ddrymodeKI',
-    'ddrymodeAI',
-    'ddrymodeCI',
+#    'ddrymodeNS',
+#    'ddrymodeKS',
+#    'ddrymodeAS',
+#    'ddrymodeCS',
+#    'ddrymodeKI',
+#    'ddrymodeAI',
+#    'ddrymodeCI',
 
 ])
 
-holuhraun = holuhraun_cloud + holuhraun_aer_rad + holuhraun_core + holuhraun_aer + rad + forcing
+holuhraun = holuhraun_aer #holuhraun_cloud + holuhraun_aer_rad + holuhraun_core + holuhraun_aer + rad + forcing
 
 # -------------- AeroCom Trajectory Experiment ---------------
 
@@ -942,16 +942,30 @@ def main(v, args):
             return False
         return True
 
+
+    def get_var(v, use_inst, *args):
+        try:
+            c = v.load_var(*args)
+        except OSError as e:
+            # Try without the mean stream
+            if use_inst:
+                v.stream = v.stream[:-1]
+                print("WARNING: Using instantaneous data as mean is not available")
+                c = v.load_var(*args)
+            else:
+                raise e
+        return c
+
     try:
         outfile = v.get_output_file(None, *filename_args)
     except Exception as e:
-        c = v.load_var(args.infile, args.product)
+        c = get_var(v, args.use_inst, args.infile, args.product)
         outfile = v.get_output_file(c, *filename_args)
         if not process_file(outfile, args.overwrite):
             return
     else:
         if process_file(outfile, args.overwrite):
-            c = v.load_var(args.infile, args.product)
+            c = get_var(v, args.use_inst, args.infile, args.product)
         else:
             return
     v.write_var(c, outfile, args.experiment, args.contact, args.output_monthly)
@@ -973,6 +987,7 @@ if __name__ == '__main__':
     parser.add_argument("--cdo", help="Just output relavent CDO commands and exit", action='store_true')
     parser.add_argument("--pdrmip_format", help="Use the PDRMIP filename formatting style", action='store_true')
     parser.add_argument("--output_monthly", help="Split the output into monthly files", action='store_true')
+    parser.add_argument("--use_inst", help="Use instantaneous variables if means are unavailable", action='store_true')
 
     # Parameter sets
     parser.add_argument('-c', '--core', action='append_const', const=core, dest='params')

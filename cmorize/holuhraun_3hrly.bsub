@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH --job-name cmorize
+#SBATCH -n 1 
+#SBATCH -t 8:00:00
+#SBATCH -p par-single
+#SBATCH -o %J.o
+#SBATCH -e %J.e
+#SBATCH --mem=64000
+
+#source activate cis_env
+
+#/home/users/dwatsonparris/miniconda3/envs/cis_env3/bin/python cmorize_ham.py '/gws/nopw/j04/eo_shared_data_vol2/scratch/dwatsonparris/gws/nopw/j04/impala/users/dwatsonparris/AeroCom_HOL-CTRL/Raw/AeroCom_HOL-CTRL_2*_.nc' /gws/nopw/j04/eo_shared_data_vol2/scratch/dwatsonparris/gws/nopw/j04/impala/users/dwatsonparris/AeroCom_HOL-CTRL/Data/aerocom3_ECHAM6.3-HAM2.3_HOL-CTRL --experiment "AeroCom3 Holuhraun VolcACI control experiment" --contact "Duncan Watson-Parris: duncan.watson-parris@physics.ox.ac.uk" --institute "University of Oxford" --time '200101-201812' --holuhraun --use_inst --monthly 
+/home/users/dwatsonparris/miniconda3/envs/cis_env3/bin/python cmorize_ham.py '/gws/nopw/j04/eo_shared_data_vol2/scratch/dwatsonparris/gws/nopw/j04/impala/users/dwatsonparris/AeroCom_HOL-CE/Raw/AeroCom_HOL-CE_2*_.nc' /gws/nopw/j04/eo_shared_data_vol2/scratch/dwatsonparris/gws/nopw/j04/impala/users/dwatsonparris/AeroCom_HOL-CE/Data/aerocom3_ECHAM6.3-HAM2.3_HOL-CE --experiment "AeroCom3 Holuhraun VolcACI eruption experiment" --contact "Duncan Watson-Parris: duncan.watson-parris@physics.ox.ac.uk" --institute "University of Oxford" --time '201408-201410' --holuhraun --use_inst --three_hourly 
+
+
